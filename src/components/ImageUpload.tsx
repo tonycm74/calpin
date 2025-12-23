@@ -57,7 +57,7 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
           <img
             src={value}
             alt="Event preview"
-            className="w-full h-48 object-cover rounded-xl border border-border"
+            className="w-full max-h-64 object-contain rounded-xl border border-border bg-secondary/50"
             onError={() => onChange(undefined)}
           />
           <button
