@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calendar, MapPin, Clock, FileText, Bell, Link as LinkIcon } from "lucide-react";
+import { Calendar, Clock, FileText, Bell, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -212,35 +212,19 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
         </div>
       </div>
 
-      {/* Location */}
+      {/* Event Link */}
       <div className="space-y-2">
         <Label htmlFor="location" className="flex items-center gap-2 text-foreground">
-          <MapPin className="w-4 h-4 text-primary" />
-          Location (optional)
+          <LinkIcon className="w-4 h-4 text-primary" />
+          Event Link (optional)
         </Label>
         <Input
           id="location"
-          placeholder="e.g., Madison Square Garden"
+          type="url"
+          placeholder="e.g., https://zoom.us/j/123456 or ticket link"
           {...register("location")}
           className="bg-card border-border focus:border-primary"
         />
-      </div>
-
-      {/* URL */}
-      <div className="space-y-2">
-        <Label htmlFor="url" className="flex items-center gap-2 text-foreground">
-          <LinkIcon className="w-4 h-4 text-primary" />
-          Event URL (optional)
-        </Label>
-        <Input
-          id="url"
-          placeholder="e.g., https://zoom.us/j/123456 or ticket link"
-          {...register("url")}
-          className="bg-card border-border focus:border-primary"
-        />
-        {errors.url && (
-          <p className="text-sm text-destructive">{errors.url.message}</p>
-        )}
       </div>
 
       {/* Reminders Note */}

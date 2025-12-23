@@ -1,4 +1,4 @@
-import { Calendar, MapPin, ExternalLink } from "lucide-react";
+import { Calendar, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { EventData, generateGoogleCalendarURL, generateOutlookURL, downloadICS } from "@/lib/calendar";
@@ -67,14 +67,28 @@ export function EventCard({ event, onAddToCalendar }: EventCardProps) {
             </div>
 
             {event.location && (
-              <div className="flex items-center gap-3 text-foreground">
+              <a 
+                href={event.location.startsWith('http') ? event.location : `https://${event.location}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity"
+              >
                 <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-primary" />
+                  <ExternalLink className="w-5 h-5 text-primary" />
                 </div>
-                <div>
-                  <p className="font-medium">{event.location}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-primary truncate">
+                    {(() => {
+                      try {
+                        return new URL(event.location.startsWith('http') ? event.location : `https://${event.location}`).hostname;
+                      } catch {
+                        return event.location;
+                      }
+                    })()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Event link</p>
                 </div>
-              </div>
+              </a>
             )}
 
             {event.url && (
