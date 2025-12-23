@@ -29,11 +29,11 @@ export function EventCard({ event, onAddToCalendar }: EventCardProps) {
       <div className="bg-card rounded-2xl border border-border overflow-hidden animate-scale-in">
         {/* Event Image */}
         {event.imageUrl && (
-          <div className="w-full h-48 overflow-hidden">
+          <div className="w-full max-h-80 overflow-hidden bg-secondary/50">
             <img 
               src={event.imageUrl} 
               alt={event.title}
-              className="w-full h-full object-cover"
+              className="w-full h-auto max-h-80 object-contain"
             />
           </div>
         )}
