@@ -1,22 +1,35 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Calendar, ArrowRight, Zap, Smartphone, Bell, Link as LinkIcon } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Calendar, ArrowRight, Zap, Smartphone, Bell, Link as LinkIcon, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateEventForm } from "@/components/CreateEventForm";
 import { EventCard } from "@/components/EventCard";
 import { SEOHead } from "@/components/SEOHead";
 import { EventData } from "@/lib/calendar";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const [createdEvent, setCreatedEvent] = useState<EventData | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const handleEventCreated = (event: EventData) => {
-    setCreatedEvent(event);
+  const handleEventCreated = (event?: EventData) => {
+    if (event) {
+      setCreatedEvent(event);
+    }
     setShowForm(false);
   };
 
-  // Preview mode - show created event
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      setShowForm(true);
+    }
+  };
+
+  // Preview mode - show created event (for non-logged in users)
   if (createdEvent) {
     return (
       <>
@@ -49,11 +62,14 @@ const Index = () => {
             <div className="text-center mb-8 animate-fade-up">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-4">
                 <Zap className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-primary">Event Page Created!</span>
+                <span className="text-sm font-medium text-primary">Preview Mode</span>
               </div>
-              <h2 className="text-xl font-semibold text-foreground">
+              <h2 className="text-xl font-semibold text-foreground mb-2">
                 Here's how your visitors will see it
               </h2>
+              <p className="text-sm text-muted-foreground">
+                <Link to="/auth" className="text-primary hover:underline">Sign in</Link> to save and share your events
+              </p>
             </div>
 
             <div className="max-w-md mx-auto animate-fade-up delay-100">
@@ -63,21 +79,16 @@ const Index = () => {
             {/* Share Link */}
             <div className="max-w-md mx-auto mt-8 animate-fade-up delay-200">
               <div className="bg-card rounded-xl border border-border p-4">
-                <p className="text-sm font-medium text-foreground mb-2">Share this link</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-secondary rounded-lg px-3 py-2 text-sm text-muted-foreground truncate">
-                    caldrop.app/e/{createdEvent.slug}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`https://caldrop.app/e/${createdEvent.slug}`);
-                    }}
-                  >
-                    <LinkIcon className="w-4 h-4" />
-                  </Button>
-                </div>
+                <p className="text-sm font-medium text-foreground mb-2">Want to share this?</p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Sign in to save your event and get a shareable link.
+                </p>
+                <Button variant="glow" size="sm" asChild>
+                  <Link to="/auth">
+                    <User className="w-4 h-4" />
+                    Sign In
+                  </Link>
+                </Button>
               </div>
             </div>
           </main>
@@ -104,6 +115,9 @@ const Index = () => {
                 </div>
                 <span className="text-lg font-bold text-foreground">CalDrop</span>
               </button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/auth">Sign In</Link>
+              </Button>
             </div>
           </header>
 
@@ -115,7 +129,7 @@ const Index = () => {
                   Create Event Page
                 </h1>
                 <p className="text-muted-foreground">
-                  Set up your event and get a shareable link with calendar buttons.
+                  Set up your event and preview the calendar buttons.
                 </p>
               </div>
 
@@ -143,9 +157,22 @@ const Index = () => {
             </div>
             <span className="text-lg font-bold text-foreground">CalDrop</span>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setShowForm(true)}>
-            Get Started
-          </Button>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleGetStarted}>
+                  Get Started
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -175,13 +202,13 @@ const Index = () => {
             <Button
               variant="glow"
               size="xl"
-              onClick={() => setShowForm(true)}
+              onClick={handleGetStarted}
             >
-              Create Event Page
+              {user ? 'Go to Dashboard' : 'Create Event Page'}
               <ArrowRight className="w-5 h-5" />
             </Button>
-            <Button variant="outline" size="lg">
-              See Example
+            <Button variant="outline" size="lg" onClick={() => setShowForm(true)}>
+              Try It Free
             </Button>
           </div>
         </div>

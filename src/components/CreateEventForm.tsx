@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { EventData, generateSlug } from "@/lib/calendar";
+import { useCreateEventPage } from "@/hooks/useEventPages";
+import { useAuth } from "@/hooks/useAuth";
 
 const eventSchema = z.object({
   title: z.string().min(1, "Event title is required").max(100),
@@ -22,11 +23,12 @@ const eventSchema = z.object({
 type EventFormData = z.infer<typeof eventSchema>;
 
 interface CreateEventFormProps {
-  onEventCreated: (event: EventData) => void;
+  onEventCreated: (event?: EventData) => void;
 }
 
 export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const createEvent = useCreateEventPage();
+  const { user } = useAuth();
 
   const {
     register,
@@ -36,9 +38,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
     resolver: zodResolver(eventSchema),
   });
 
-  const onSubmit = (data: EventFormData) => {
-    setIsSubmitting(true);
-    
+  const onSubmit = async (data: EventFormData) => {
     const startDateTime = new Date(`${data.startDate}T${data.startTime}`);
     let endDateTime: Date | undefined;
     
@@ -54,13 +54,17 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       endTime: endDateTime,
       location: data.location,
       slug: generateSlug(data.title),
-      reminderMinutes: [60, 1440], // 1 hour and 1 day before
+      reminderMinutes: [60, 1440],
     };
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    if (user) {
+      // Save to database if logged in
+      await createEvent.mutateAsync(event);
+      onEventCreated();
+    } else {
+      // Just return the event data for preview
       onEventCreated(event);
-    }, 500);
+    }
   };
 
   return (
@@ -172,9 +176,9 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
         variant="glow"
         size="xl"
         className="w-full"
-        disabled={isSubmitting}
+        disabled={createEvent.isPending}
       >
-        {isSubmitting ? "Creating..." : "Create Event Page"}
+        {createEvent.isPending ? "Creating..." : "Create Event Page"}
       </Button>
     </form>
   );

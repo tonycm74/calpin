@@ -1,0 +1,93 @@
+import { useParams, Link } from 'react-router-dom';
+import { Calendar, Loader2 } from 'lucide-react';
+import { EventCard } from '@/components/EventCard';
+import { SEOHead } from '@/components/SEOHead';
+import { useEventPageBySlug, eventPageToEventData, useTrackCalendarAdd } from '@/hooks/useEventPages';
+
+const EventPage = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const { data: eventPage, isLoading, error } = useEventPageBySlug(slug);
+  const trackCalendarAdd = useTrackCalendarAdd();
+
+  const handleAddToCalendar = (calendarType: string) => {
+    if (eventPage) {
+      trackCalendarAdd.mutate({
+        eventPageId: eventPage.id,
+        calendarType,
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !eventPage) {
+    return (
+      <>
+        <SEOHead title="Event Not Found | CalDrop" />
+        <div className="min-h-screen bg-background">
+          <header className="border-b border-border">
+            <div className="container py-4">
+              <Link to="/" className="flex items-center gap-2 w-fit">
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <span className="text-lg font-bold text-foreground">CalDrop</span>
+              </Link>
+            </div>
+          </header>
+          <main className="container py-20 text-center">
+            <h1 className="text-2xl font-bold text-foreground mb-2">Event not found</h1>
+            <p className="text-muted-foreground">This event page doesn't exist or has been removed.</p>
+          </main>
+        </div>
+      </>
+    );
+  }
+
+  const eventData = eventPageToEventData(eventPage);
+
+  return (
+    <>
+      <SEOHead 
+        title={`${eventPage.title} | CalDrop`}
+        description={eventPage.description || `Add ${eventPage.title} to your calendar`}
+      />
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="border-b border-border">
+          <div className="container py-4">
+            <Link to="/" className="flex items-center gap-2 w-fit">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <span className="text-lg font-bold text-foreground">CalDrop</span>
+            </Link>
+          </div>
+        </header>
+
+        {/* Event Content */}
+        <main className="container py-12">
+          <div className="max-w-md mx-auto animate-fade-up">
+            <EventCard 
+              event={eventData} 
+              onAddToCalendar={handleAddToCalendar}
+            />
+          </div>
+        </main>
+
+        {/* Background Glow */}
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[350px] bg-primary/5 rounded-full blur-3xl" />
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default EventPage;
