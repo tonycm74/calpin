@@ -14,7 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      calendar_adds: {
+        Row: {
+          calendar_type: string
+          created_at: string
+          event_page_id: string
+          id: string
+        }
+        Insert: {
+          calendar_type: string
+          created_at?: string
+          event_page_id: string
+          id?: string
+        }
+        Update: {
+          calendar_type?: string
+          created_at?: string
+          event_page_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_adds_event_page_id_fkey"
+            columns: ["event_page_id"]
+            isOneToOne: false
+            referencedRelation: "event_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_pages: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string | null
+          id: string
+          location: string | null
+          reminder_minutes: number[] | null
+          slug: string
+          start_time: string
+          title: string
+          ui_schema: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          reminder_minutes?: number[] | null
+          slug: string
+          start_time: string
+          title: string
+          ui_schema?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          reminder_minutes?: number[] | null
+          slug?: string
+          start_time?: string
+          title?: string
+          ui_schema?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
