@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calendar, MapPin, Clock, FileText, Bell, Link as LinkIcon, ImagePlus, X } from "lucide-react";
+import { Calendar, MapPin, Clock, FileText, Bell, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ImageUpload } from "@/components/ImageUpload";
 import { EventData, generateSlug } from "@/lib/calendar";
 import { useCreateEventPage } from "@/hooks/useEventPages";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,7 +21,6 @@ const eventSchema = z.object({
   endTime: z.string().optional(),
   location: z.string().max(200).optional(),
   url: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  imageUrl: z.string().url("Please enter a valid image URL").optional().or(z.literal("")),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -30,39 +30,17 @@ interface CreateEventFormProps {
 }
 
 export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | undefined>();
   const createEvent = useCreateEventPage();
   const { user } = useAuth();
 
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors },
   } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
   });
-
-  const imageUrl = watch("imageUrl");
-
-  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setValue("imageUrl", url);
-    if (url && url.match(/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) {
-      setImagePreview(url);
-    } else if (url && url.match(/^https?:\/\/.+/i)) {
-      // Try to load it anyway
-      setImagePreview(url);
-    } else {
-      setImagePreview(null);
-    }
-  };
-
-  const clearImage = () => {
-    setValue("imageUrl", "");
-    setImagePreview(null);
-  };
 
   const onSubmit = async (data: EventFormData) => {
     const startDateTime = new Date(`${data.startDate}T${data.startTime}`);
@@ -80,7 +58,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       endTime: endDateTime,
       location: data.location || undefined,
       url: data.url || undefined,
-      imageUrl: data.imageUrl || undefined,
+      imageUrl: imageUrl,
       slug: generateSlug(data.title),
       reminderMinutes: [60, 1440],
     };
@@ -96,39 +74,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Event Image */}
-      <div className="space-y-2">
-        <Label htmlFor="imageUrl" className="flex items-center gap-2 text-foreground">
-          <ImagePlus className="w-4 h-4 text-primary" />
-          Event Image (optional)
-        </Label>
-        <Input
-          id="imageUrl"
-          placeholder="https://example.com/image.jpg"
-          {...register("imageUrl")}
-          onChange={handleImageUrlChange}
-          className="bg-card border-border focus:border-primary"
-        />
-        {errors.imageUrl && (
-          <p className="text-sm text-destructive">{errors.imageUrl.message}</p>
-        )}
-        {imagePreview && (
-          <div className="relative mt-2">
-            <img 
-              src={imagePreview} 
-              alt="Preview" 
-              className="w-full h-40 object-cover rounded-lg border border-border"
-              onError={() => setImagePreview(null)}
-            />
-            <button
-              type="button"
-              onClick={clearImage}
-              className="absolute top-2 right-2 p-1.5 bg-background/80 rounded-full hover:bg-background transition-colors"
-            >
-              <X className="w-4 h-4 text-foreground" />
-            </button>
-          </div>
-        )}
-      </div>
+      <ImageUpload value={imageUrl} onChange={setImageUrl} />
 
       {/* Event Title */}
       <div className="space-y-2">
