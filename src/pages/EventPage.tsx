@@ -58,32 +58,18 @@ const EventPage = () => {
         title={`${eventPage.title} | CalDrop`}
         description={eventPage.description || `Add ${eventPage.title} to your calendar`}
       />
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="border-b border-border">
-          <div className="container py-4">
-            <Link to="/" className="flex items-center gap-2 w-fit">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-bold text-foreground">CalDrop</span>
-            </Link>
-          </div>
-        </header>
-
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         {/* Event Content */}
-        <main className="container py-12">
-          <div className="max-w-md mx-auto animate-fade-up">
-            <EventCard 
-              event={eventData} 
-              onAddToCalendar={handleAddToCalendar}
-            />
-          </div>
-        </main>
+        <div className="w-full max-w-md animate-fade-up">
+          <EventCard 
+            event={eventData} 
+            onAddToCalendar={handleAddToCalendar}
+          />
+        </div>
 
         {/* Background Glow */}
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[350px] bg-primary/5 rounded-full blur-3xl" />
+        <div className="fixed inset-0 pointer-events-none -z-10">
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[350px] bg-primary/5 rounded-full blur-3xl" />
         </div>
       </div>
     </>
