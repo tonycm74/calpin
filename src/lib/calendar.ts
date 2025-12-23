@@ -5,6 +5,8 @@ export interface EventData {
   startTime: Date;
   endTime?: Date;
   location?: string;
+  url?: string;
+  imageUrl?: string;
   slug?: string;
   reminderMinutes?: number[];
 }

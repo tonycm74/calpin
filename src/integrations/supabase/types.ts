@@ -49,6 +49,7 @@ export type Database = {
           description: string | null
           end_time: string | null
           id: string
+          image_url: string | null
           location: string | null
           reminder_minutes: number[] | null
           slug: string
@@ -56,6 +57,7 @@ export type Database = {
           title: string
           ui_schema: Json | null
           updated_at: string
+          url: string | null
           user_id: string
         }
         Insert: {
@@ -63,6 +65,7 @@ export type Database = {
           description?: string | null
           end_time?: string | null
           id?: string
+          image_url?: string | null
           location?: string | null
           reminder_minutes?: number[] | null
           slug: string
@@ -70,6 +73,7 @@ export type Database = {
           title: string
           ui_schema?: Json | null
           updated_at?: string
+          url?: string | null
           user_id: string
         }
         Update: {
@@ -77,6 +81,7 @@ export type Database = {
           description?: string | null
           end_time?: string | null
           id?: string
+          image_url?: string | null
           location?: string | null
           reminder_minutes?: number[] | null
           slug?: string
@@ -84,6 +89,7 @@ export type Database = {
           title?: string
           ui_schema?: Json | null
           updated_at?: string
+          url?: string | null
           user_id?: string
         }
         Relationships: []

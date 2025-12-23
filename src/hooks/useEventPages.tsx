@@ -12,6 +12,8 @@ export interface EventPage {
   start_time: string;
   end_time: string | null;
   location: string | null;
+  url: string | null;
+  image_url: string | null;
   slug: string;
   reminder_minutes: number[] | null;
   ui_schema: Record<string, unknown> | null;
@@ -77,6 +79,8 @@ export function useCreateEventPage() {
           start_time: event.startTime.toISOString(),
           end_time: event.endTime?.toISOString() || null,
           location: event.location || null,
+          url: event.url || null,
+          image_url: event.imageUrl || null,
           slug: generateSlug(event.title),
           reminder_minutes: event.reminderMinutes || [60, 1440],
         })
@@ -157,6 +161,8 @@ export function eventPageToEventData(page: EventPage): EventData {
     startTime: new Date(page.start_time),
     endTime: page.end_time ? new Date(page.end_time) : undefined,
     location: page.location || undefined,
+    url: page.url || undefined,
+    imageUrl: page.image_url || undefined,
     slug: page.slug,
     reminderMinutes: page.reminder_minutes || [60, 1440],
   };
