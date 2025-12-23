@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/components/ImageUpload";
+import { EventCard } from "@/components/EventCard";
 import { EventData, generateSlug } from "@/lib/calendar";
 import { useCreateEventPage } from "@/hooks/useEventPages";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,10 +38,68 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      startDate: "",
+      startTime: "",
+      endDate: "",
+      endTime: "",
+      location: "",
+      url: "",
+    },
   });
+
+  // Watch form values for live preview
+  const watchedValues = watch();
+
+  // Generate preview event data
+  const previewEvent = useMemo((): EventData | null => {
+    const { title, startDate, startTime, endDate, endTime, description, location, url } = watchedValues;
+    
+    if (!title && !startDate && !startTime && !imageUrl) {
+      return null;
+    }
+
+    let startDateTime: Date;
+    try {
+      if (startDate && startTime) {
+        startDateTime = new Date(`${startDate}T${startTime}`);
+      } else if (startDate) {
+        startDateTime = new Date(`${startDate}T12:00`);
+      } else {
+        startDateTime = new Date();
+      }
+    } catch {
+      startDateTime = new Date();
+    }
+
+    let endDateTime: Date | undefined;
+    if (endDate && endTime) {
+      try {
+        endDateTime = new Date(`${endDate}T${endTime}`);
+      } catch {
+        endDateTime = undefined;
+      }
+    }
+
+    return {
+      id: "preview",
+      title: title || "Your Event Title",
+      description: description || undefined,
+      startTime: startDateTime,
+      endTime: endDateTime,
+      location: location || undefined,
+      url: url || undefined,
+      imageUrl: imageUrl,
+      slug: generateSlug(title || "preview"),
+      reminderMinutes: [60, 1440],
+    };
+  }, [watchedValues, imageUrl]);
 
   const onSubmit = async (data: EventFormData) => {
     const startDateTime = new Date(`${data.startDate}T${data.startTime}`);
@@ -71,7 +130,8 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
     }
   };
 
-  return (
+  const formContent = (
+
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Event Image */}
       <ImageUpload value={imageUrl} onChange={setImageUrl} />
@@ -205,5 +265,33 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
         {createEvent.isPending ? "Creating..." : "Create Event Page"}
       </Button>
     </form>
+  );
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+      {/* Form Column */}
+      <div>{formContent}</div>
+
+      {/* Live Preview Column */}
+      <div className="hidden lg:block">
+        <div className="sticky top-8">
+          <div className="mb-4">
+            <p className="text-sm font-medium text-muted-foreground text-center">Live Preview</p>
+          </div>
+          {previewEvent ? (
+            <EventCard event={previewEvent} />
+          ) : (
+            <div className="bg-card rounded-2xl border border-border border-dashed p-12 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground">
+                Start filling out the form to see a live preview
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
