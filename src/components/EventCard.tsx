@@ -5,23 +5,23 @@ import { EventData, generateGoogleCalendarURL, generateOutlookURL, downloadICS }
 
 interface EventCardProps {
   event: EventData;
-  onAddToCalendar?: () => void;
+  onAddToCalendar?: (calendarType: string) => void;
 }
 
 export function EventCard({ event, onAddToCalendar }: EventCardProps) {
   const handleGoogleCalendar = () => {
     window.open(generateGoogleCalendarURL(event), '_blank');
-    onAddToCalendar?.();
+    onAddToCalendar?.('google');
   };
 
   const handleOutlook = () => {
     window.open(generateOutlookURL(event), '_blank');
-    onAddToCalendar?.();
+    onAddToCalendar?.('outlook');
   };
 
   const handleApple = () => {
     downloadICS(event);
-    onAddToCalendar?.();
+    onAddToCalendar?.('apple');
   };
 
   return (
