@@ -1,27 +1,30 @@
 import { useState, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calendar, Clock, FileText, Bell, Link as LinkIcon } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, Clock, FileText, Bell, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ImageUpload } from "@/components/ImageUpload";
 import { EventCard } from "@/components/EventCard";
 import { EventData, generateSlug } from "@/lib/calendar";
 import { useCreateEventPage } from "@/hooks/useEventPages";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 const eventSchema = z.object({
   title: z.string().min(1, "Event title is required").max(100),
   description: z.string().max(500).optional(),
-  startDate: z.string().min(1, "Start date is required"),
+  startDate: z.date({ required_error: "Start date is required" }),
   startTime: z.string().min(1, "Start time is required"),
-  endDate: z.string().optional(),
+  endDate: z.date().optional().nullable(),
   endTime: z.string().optional(),
   location: z.string().max(200).optional(),
-  url: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -39,18 +42,18 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
     register,
     handleSubmit,
     watch,
+    control,
     formState: { errors },
   } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
       title: "",
       description: "",
-      startDate: "",
+      startDate: undefined,
       startTime: "",
-      endDate: "",
+      endDate: undefined,
       endTime: "",
       location: "",
-      url: "",
     },
   });
 
@@ -59,7 +62,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
 
   // Generate preview event data
   const previewEvent = useMemo((): EventData | null => {
-    const { title, startDate, startTime, endDate, endTime, description, location, url } = watchedValues;
+    const { title, startDate, startTime, endDate, endTime, description, location } = watchedValues;
     
     if (!title && !startDate && !startTime && !imageUrl) {
       return null;
@@ -68,9 +71,12 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
     let startDateTime: Date;
     try {
       if (startDate && startTime) {
-        startDateTime = new Date(`${startDate}T${startTime}`);
+        const [hours, minutes] = startTime.split(':').map(Number);
+        startDateTime = new Date(startDate);
+        startDateTime.setHours(hours, minutes);
       } else if (startDate) {
-        startDateTime = new Date(`${startDate}T12:00`);
+        startDateTime = new Date(startDate);
+        startDateTime.setHours(12, 0);
       } else {
         startDateTime = new Date();
       }
@@ -81,7 +87,9 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
     let endDateTime: Date | undefined;
     if (endDate && endTime) {
       try {
-        endDateTime = new Date(`${endDate}T${endTime}`);
+        const [hours, minutes] = endTime.split(':').map(Number);
+        endDateTime = new Date(endDate);
+        endDateTime.setHours(hours, minutes);
       } catch {
         endDateTime = undefined;
       }
@@ -94,7 +102,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       startTime: startDateTime,
       endTime: endDateTime,
       location: location || undefined,
-      url: url || undefined,
+      url: undefined,
       imageUrl: imageUrl,
       slug: generateSlug(title || "preview"),
       reminderMinutes: [60, 1440],
@@ -102,11 +110,15 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
   }, [watchedValues, imageUrl]);
 
   const onSubmit = async (data: EventFormData) => {
-    const startDateTime = new Date(`${data.startDate}T${data.startTime}`);
-    let endDateTime: Date | undefined;
+    const [startHours, startMinutes] = data.startTime.split(':').map(Number);
+    const startDateTime = new Date(data.startDate);
+    startDateTime.setHours(startHours, startMinutes);
     
+    let endDateTime: Date | undefined;
     if (data.endDate && data.endTime) {
-      endDateTime = new Date(`${data.endDate}T${data.endTime}`);
+      const [endHours, endMinutes] = data.endTime.split(':').map(Number);
+      endDateTime = new Date(data.endDate);
+      endDateTime.setHours(endHours, endMinutes);
     }
 
     const event: EventData = {
@@ -116,7 +128,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       startTime: startDateTime,
       endTime: endDateTime,
       location: data.location || undefined,
-      url: data.url || undefined,
+      url: undefined,
       imageUrl: imageUrl,
       slug: generateSlug(data.title),
       reminderMinutes: [60, 1440],
@@ -131,7 +143,6 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
   };
 
   const formContent = (
-
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Event Image */}
       <ImageUpload value={imageUrl} onChange={setImageUrl} />
@@ -170,14 +181,38 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       {/* Start Date & Time */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2 text-foreground">
-          <Calendar className="w-4 h-4 text-primary" />
+          <CalendarIcon className="w-4 h-4 text-primary" />
           Start Date & Time
         </Label>
         <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="date"
-            {...register("startDate")}
-            className="bg-card border-border focus:border-primary"
+          <Controller
+            control={control}
+            name="startDate"
+            render={({ field }) => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-card border-border",
+                      !field.value && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
           />
           <Input
             type="time"
@@ -199,10 +234,34 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
           End Date & Time (optional)
         </Label>
         <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="date"
-            {...register("endDate")}
-            className="bg-card border-border focus:border-primary"
+          <Controller
+            control={control}
+            name="endDate"
+            render={({ field }) => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-card border-border",
+                      !field.value && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value ?? undefined}
+                    onSelect={field.onChange}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
           />
           <Input
             type="time"
@@ -267,7 +326,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
           ) : (
             <div className="bg-card rounded-2xl border border-border border-dashed p-12 text-center">
               <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-muted-foreground" />
+                <CalendarIcon className="w-8 h-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground">
                 Start filling out the form to see a live preview
