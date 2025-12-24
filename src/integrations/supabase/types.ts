@@ -43,41 +43,6 @@ export type Database = {
           },
         ]
       }
-      page_views: {
-        Row: {
-          id: string
-          event_page_id: string
-          visitor_id: string | null
-          referrer: string | null
-          user_agent: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          event_page_id: string
-          visitor_id?: string | null
-          referrer?: string | null
-          user_agent?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          event_page_id?: string
-          visitor_id?: string | null
-          referrer?: string | null
-          user_agent?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "page_views_event_page_id_fkey"
-            columns: ["event_page_id"]
-            isOneToOne: false
-            referencedRelation: "event_pages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       event_pages: {
         Row: {
           created_at: string
@@ -158,12 +123,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_event_analytics: {
-        Args: {
-          p_event_page_id: string
-        }
-        Returns: Json
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
