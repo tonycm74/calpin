@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { EventData, generateSlug } from '@/lib/calendar';
+import { EventData, UISchema, defaultUISchema, generateSlug } from '@/lib/calendar';
 import { useToast } from '@/hooks/use-toast';
 
 export interface EventPage {
@@ -83,6 +83,7 @@ export function useCreateEventPage() {
           image_url: event.imageUrl || null,
           slug: generateSlug(event.title),
           reminder_minutes: event.reminderMinutes || [60, 1440],
+          ui_schema: event.uiSchema || defaultUISchema,
         })
         .select()
         .single();
@@ -152,6 +153,54 @@ export function useTrackCalendarAdd() {
   });
 }
 
+export function useUpdateEventPage() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (event: EventData & { id: string }) => {
+      if (!user) throw new Error('Must be logged in');
+
+      const { data, error } = await supabase
+        .from('event_pages')
+        .update({
+          title: event.title,
+          description: event.description || null,
+          start_time: event.startTime.toISOString(),
+          end_time: event.endTime?.toISOString() || null,
+          location: event.location || null,
+          url: event.url || null,
+          image_url: event.imageUrl || null,
+          reminder_minutes: event.reminderMinutes || [60, 1440],
+          ui_schema: event.uiSchema || defaultUISchema,
+        })
+        .eq('id', event.id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as EventPage;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-pages'] });
+      queryClient.invalidateQueries({ queryKey: ['event-page'] });
+      toast({
+        title: 'Event updated!',
+        description: 'Your changes have been saved.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error updating event',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
 // Helper to convert database EventPage to EventData
 export function eventPageToEventData(page: EventPage): EventData {
   return {
@@ -165,5 +214,6 @@ export function eventPageToEventData(page: EventPage): EventData {
     imageUrl: page.image_url || undefined,
     slug: page.slug,
     reminderMinutes: page.reminder_minutes || [60, 1440],
+    uiSchema: (page.ui_schema as UISchema) || defaultUISchema,
   };
 }

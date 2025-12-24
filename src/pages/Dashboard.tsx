@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Plus, ExternalLink, Trash2, Copy, LogOut } from 'lucide-react';
+import { Calendar, Plus, ExternalLink, Trash2, Copy, LogOut, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { SEOHead } from '@/components/SEOHead';
 import { CreateEventForm } from '@/components/CreateEventForm';
 import { useAuth } from '@/hooks/useAuth';
-import { useEventPages, useDeleteEventPage, eventPageToEventData } from '@/hooks/useEventPages';
+import { useEventPages, useDeleteEventPage, eventPageToEventData, EventPage } from '@/hooks/useEventPages';
 import { useToast } from '@/hooks/use-toast';
 import { EventData } from '@/lib/calendar';
 
 const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<EventData | null>(null);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { data: eventPages, isLoading } = useEventPages();
@@ -25,6 +26,13 @@ const Dashboard = () => {
 
   const handleEventCreated = () => {
     setShowForm(false);
+    setEditingEvent(null);
+  };
+
+  const handleEditEvent = (page: EventPage) => {
+    const eventData = eventPageToEventData(page);
+    setEditingEvent(eventData);
+    setShowForm(true);
   };
 
   const copyLink = (slug: string) => {
@@ -39,17 +47,17 @@ const Dashboard = () => {
   if (showForm) {
     return (
       <>
-        <SEOHead title="Create Event | CalDrop" />
+        <SEOHead title={editingEvent ? "Edit Event | CalDrop" : "Create Event | CalDrop"} />
         <div className="min-h-screen bg-background">
           <header className="border-b border-border">
             <div className="container py-4 flex items-center justify-between">
-              <button onClick={() => setShowForm(false)} className="flex items-center gap-2">
+              <button onClick={() => { setShowForm(false); setEditingEvent(null); }} className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <Calendar className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <span className="text-lg font-bold text-foreground">CalDrop</span>
               </button>
-              <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>
+              <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingEvent(null); }}>
                 Cancel
               </Button>
             </div>
@@ -58,13 +66,19 @@ const Dashboard = () => {
           <main className="container py-12">
             <div className="max-w-4xl mx-auto">
               <div className="mb-8 animate-fade-up">
-                <h1 className="text-2xl font-bold text-foreground mb-2">Create Event Page</h1>
+                <h1 className="text-2xl font-bold text-foreground mb-2">
+                  {editingEvent ? 'Edit Event Page' : 'Create Event Page'}
+                </h1>
                 <p className="text-muted-foreground">
-                  Set up your event and get a shareable link.
+                  {editingEvent ? 'Update your event details and styling.' : 'Set up your event and get a shareable link.'}
                 </p>
               </div>
               <div className="animate-fade-up delay-100">
-                <CreateEventForm onEventCreated={handleEventCreated} />
+                <CreateEventForm 
+                  onEventCreated={handleEventCreated} 
+                  existingEvent={editingEvent || undefined}
+                  mode={editingEvent ? 'edit' : 'create'}
+                />
               </div>
             </div>
           </main>
@@ -148,6 +162,14 @@ const Dashboard = () => {
                     >
                       <Copy className="w-4 h-4" />
                       Copy Link
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEditEvent(page)}
+                      title="Edit event"
+                    >
+                      <Pencil className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="outline"

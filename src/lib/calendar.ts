@@ -1,3 +1,19 @@
+export interface UISchema {
+  textAlign: 'left' | 'center' | 'right';
+  imageSize: 'small' | 'medium' | 'large' | 'full';
+  imagePosition: 'top' | 'background';
+  showDescription: boolean;
+  buttonStyle: 'default' | 'minimal' | 'rounded';
+}
+
+export const defaultUISchema: UISchema = {
+  textAlign: 'left',
+  imageSize: 'full',
+  imagePosition: 'top',
+  showDescription: true,
+  buttonStyle: 'default',
+};
+
 export interface EventData {
   id?: string;
   title: string;
@@ -9,6 +25,7 @@ export interface EventData {
   imageUrl?: string;
   slug?: string;
   reminderMinutes?: number[];
+  uiSchema?: UISchema;
 }
 
 function formatDateForICS(date: Date): string {

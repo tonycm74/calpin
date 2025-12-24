@@ -1,21 +1,31 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, FileText, Link as LinkIcon } from "lucide-react";
+import { 
+  Calendar as CalendarIcon, 
+  FileText, 
+  Link as LinkIcon, 
+  AlignLeft, 
+  AlignCenter, 
+  AlignRight,
+  Image as ImageIcon,
+  Palette
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 import { EventCard } from "@/components/EventCard";
 import { TimePicker } from "@/components/TimePicker";
 import { ReminderSettings } from "@/components/ReminderSettings";
-import { EventData, generateSlug } from "@/lib/calendar";
-import { useCreateEventPage } from "@/hooks/useEventPages";
+import { EventData, UISchema, defaultUISchema, generateSlug } from "@/lib/calendar";
+import { useCreateEventPage, useUpdateEventPage } from "@/hooks/useEventPages";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -33,12 +43,17 @@ type EventFormData = z.infer<typeof eventSchema>;
 
 interface CreateEventFormProps {
   onEventCreated: (event?: EventData) => void;
+  existingEvent?: EventData;
+  mode?: 'create' | 'edit';
 }
 
-export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
-  const [imageUrl, setImageUrl] = useState<string | undefined>();
-  const [reminders, setReminders] = useState<number[]>([60, 1440]);
+export function CreateEventForm({ onEventCreated, existingEvent, mode = 'create' }: CreateEventFormProps) {
+  const [imageUrl, setImageUrl] = useState<string | undefined>(existingEvent?.imageUrl);
+  const [reminders, setReminders] = useState<number[]>(existingEvent?.reminderMinutes || [60, 1440]);
+  const [uiSchema, setUISchema] = useState<UISchema>(existingEvent?.uiSchema || defaultUISchema);
+  
   const createEvent = useCreateEventPage();
+  const updateEvent = useUpdateEventPage();
   const { user } = useAuth();
 
   const {
@@ -47,19 +62,46 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
     watch,
     control,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      startDate: undefined,
-      startTime: "",
-      endDate: undefined,
-      endTime: "",
-      location: "",
+      title: existingEvent?.title || "",
+      description: existingEvent?.description || "",
+      startDate: existingEvent?.startTime || undefined,
+      startTime: existingEvent?.startTime 
+        ? `${existingEvent.startTime.getHours().toString().padStart(2, '0')}:${existingEvent.startTime.getMinutes().toString().padStart(2, '0')}`
+        : "",
+      endDate: existingEvent?.endTime || undefined,
+      endTime: existingEvent?.endTime
+        ? `${existingEvent.endTime.getHours().toString().padStart(2, '0')}:${existingEvent.endTime.getMinutes().toString().padStart(2, '0')}`
+        : "",
+      location: existingEvent?.location || "",
     },
   });
+
+  // Update form when existingEvent changes
+  useEffect(() => {
+    if (existingEvent) {
+      reset({
+        title: existingEvent.title || "",
+        description: existingEvent.description || "",
+        startDate: existingEvent.startTime || undefined,
+        startTime: existingEvent.startTime 
+          ? `${existingEvent.startTime.getHours().toString().padStart(2, '0')}:${existingEvent.startTime.getMinutes().toString().padStart(2, '0')}`
+          : "",
+        endDate: existingEvent.endTime || undefined,
+        endTime: existingEvent.endTime
+          ? `${existingEvent.endTime.getHours().toString().padStart(2, '0')}:${existingEvent.endTime.getMinutes().toString().padStart(2, '0')}`
+          : "",
+        location: existingEvent.location || "",
+      });
+      setImageUrl(existingEvent.imageUrl);
+      setReminders(existingEvent.reminderMinutes || [60, 1440]);
+      setUISchema(existingEvent.uiSchema || defaultUISchema);
+    }
+  }, [existingEvent, reset]);
 
   // Watch form values for live preview
   const watchedValues = watch();
@@ -100,7 +142,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
     }
 
     return {
-      id: "preview",
+      id: existingEvent?.id || "preview",
       title: title || "Your Event Title",
       description: description || undefined,
       startTime: startDateTime,
@@ -108,10 +150,11 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       location: location || undefined,
       url: undefined,
       imageUrl: imageUrl,
-      slug: generateSlug(title || "preview"),
+      slug: existingEvent?.slug || generateSlug(title || "preview"),
       reminderMinutes: reminders,
+      uiSchema: uiSchema,
     };
-  }, [watchedValues, imageUrl, reminders]);
+  }, [watchedValues, imageUrl, reminders, uiSchema, existingEvent]);
 
   const onSubmit = async (data: EventFormData) => {
     const [startHours, startMinutes] = data.startTime.split(':').map(Number);
@@ -126,7 +169,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
     }
 
     const event: EventData = {
-      id: crypto.randomUUID(),
+      id: existingEvent?.id || crypto.randomUUID(),
       title: data.title,
       description: data.description,
       startTime: startDateTime,
@@ -134,16 +177,25 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       location: data.location || undefined,
       url: undefined,
       imageUrl: imageUrl,
-      slug: generateSlug(data.title),
+      slug: existingEvent?.slug || generateSlug(data.title),
       reminderMinutes: reminders,
+      uiSchema: uiSchema,
     };
 
     if (user) {
-      await createEvent.mutateAsync(event);
+      if (mode === 'edit' && existingEvent?.id) {
+        await updateEvent.mutateAsync({ ...event, id: existingEvent.id });
+      } else {
+        await createEvent.mutateAsync(event);
+      }
       onEventCreated();
     } else {
       onEventCreated(event);
     }
+  };
+
+  const updateUISchema = (key: keyof UISchema, value: UISchema[keyof UISchema]) => {
+    setUISchema(prev => ({ ...prev, [key]: value }));
   };
 
   const formContent = (
@@ -305,15 +357,89 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       {/* Reminder Settings */}
       <ReminderSettings value={reminders} onChange={setReminders} />
 
+      {/* Styling Options */}
+      <div className="space-y-4 pt-4 border-t border-border">
+        <Label className="flex items-center gap-2 text-foreground">
+          <Palette className="w-4 h-4 text-primary" />
+          Page Styling
+        </Label>
+
+        {/* Text Alignment */}
+        <div className="space-y-2">
+          <Label className="text-sm text-muted-foreground">Text Alignment</Label>
+          <div className="flex gap-2">
+            {[
+              { value: 'left', icon: AlignLeft, label: 'Left' },
+              { value: 'center', icon: AlignCenter, label: 'Center' },
+              { value: 'right', icon: AlignRight, label: 'Right' },
+            ].map(({ value, icon: Icon, label }) => (
+              <Button
+                key={value}
+                type="button"
+                variant={uiSchema.textAlign === value ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1"
+                onClick={() => updateUISchema('textAlign', value as UISchema['textAlign'])}
+              >
+                <Icon className="w-4 h-4 mr-1" />
+                {label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Image Size */}
+        <div className="space-y-2">
+          <Label className="text-sm text-muted-foreground flex items-center gap-2">
+            <ImageIcon className="w-4 h-4" />
+            Image Size
+          </Label>
+          <Select
+            value={uiSchema.imageSize}
+            onValueChange={(value) => updateUISchema('imageSize', value as UISchema['imageSize'])}
+          >
+            <SelectTrigger className="bg-card border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border">
+              <SelectItem value="small">Small</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="large">Large</SelectItem>
+              <SelectItem value="full">Full Width</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Button Style */}
+        <div className="space-y-2">
+          <Label className="text-sm text-muted-foreground">Button Style</Label>
+          <Select
+            value={uiSchema.buttonStyle}
+            onValueChange={(value) => updateUISchema('buttonStyle', value as UISchema['buttonStyle'])}
+          >
+            <SelectTrigger className="bg-card border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border">
+              <SelectItem value="default">Default</SelectItem>
+              <SelectItem value="minimal">Minimal</SelectItem>
+              <SelectItem value="rounded">Rounded</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Submit Button */}
       <Button
         type="submit"
         variant="glow"
         size="xl"
         className="w-full"
-        disabled={createEvent.isPending}
+        disabled={createEvent.isPending || updateEvent.isPending}
       >
-        {createEvent.isPending ? "Creating..." : "Create Event Page"}
+        {createEvent.isPending || updateEvent.isPending 
+          ? (mode === 'edit' ? "Saving..." : "Creating...") 
+          : (mode === 'edit' ? "Save Changes" : "Create Event Page")}
       </Button>
     </form>
   );

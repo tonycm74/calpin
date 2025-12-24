@@ -7,7 +7,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { EventData, generateGoogleCalendarURL, generateOutlookURL, downloadICS } from "@/lib/calendar";
+import { EventData, defaultUISchema, generateGoogleCalendarURL, generateOutlookURL, downloadICS } from "@/lib/calendar";
+import { cn } from "@/lib/utils";
 
 interface EventCardProps {
   event: EventData;
@@ -15,6 +16,8 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onAddToCalendar }: EventCardProps) {
+  const uiSchema = event.uiSchema || defaultUISchema;
+
   const handleGoogleCalendar = () => {
     window.open(generateGoogleCalendarURL(event), '_blank');
     onAddToCalendar?.('google');
@@ -30,27 +33,55 @@ export function EventCard({ event, onAddToCalendar }: EventCardProps) {
     onAddToCalendar?.('apple');
   };
 
+  // Image size classes
+  const imageSizeClasses = {
+    small: 'max-h-32',
+    medium: 'max-h-48',
+    large: 'max-h-64',
+    full: 'max-h-80',
+  };
+
+  // Text alignment classes
+  const textAlignClasses = {
+    left: 'text-left',
+    center: 'text-center',
+    right: 'text-right',
+  };
+
+  // Button style classes
+  const buttonClasses = {
+    default: '',
+    minimal: 'bg-transparent border border-primary text-primary hover:bg-primary/10',
+    rounded: 'rounded-full',
+  };
+
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="bg-card rounded-2xl border border-border overflow-hidden animate-scale-in">
         {/* Event Image */}
         {event.imageUrl && (
-          <div className="w-full max-h-80 overflow-hidden bg-secondary/50">
+          <div className={cn(
+            "w-full overflow-hidden bg-secondary/50",
+            imageSizeClasses[uiSchema.imageSize]
+          )}>
             <img 
               src={event.imageUrl} 
               alt={event.title}
-              className="w-full h-auto max-h-80 object-contain"
+              className={cn(
+                "w-full h-auto object-contain",
+                imageSizeClasses[uiSchema.imageSize]
+              )}
             />
           </div>
         )}
 
-        <div className="p-6 space-y-6">
+        <div className={cn("p-6 space-y-6", textAlignClasses[uiSchema.textAlign])}>
           {/* Event Title */}
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-foreground leading-tight">
               {event.title}
             </h1>
-            {event.description && (
+            {uiSchema.showDescription && event.description && (
               <p className="text-muted-foreground text-sm leading-relaxed">
                 {event.description}
               </p>
@@ -58,60 +89,132 @@ export function EventCard({ event, onAddToCalendar }: EventCardProps) {
           </div>
 
           {/* Event Details */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 text-foreground">
-              <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                <Calendar className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium">{format(event.startTime, 'EEEE, MMMM d, yyyy')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {format(event.startTime, 'h:mm a')}
-                  {event.endTime && ` - ${format(event.endTime, 'h:mm a')}`}
-                </p>
-              </div>
-            </div>
-
-            {event.location && (
-              <a 
-                href={event.location.startsWith('http') ? event.location : `https://${event.location}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity"
-              >
-                <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                  <ExternalLink className="w-5 h-5 text-primary" />
+          <div className={cn(
+            "space-y-3",
+            uiSchema.textAlign === 'center' && "flex flex-col items-center"
+          )}>
+            {/* Date/Time - stacked layout for center alignment */}
+            {uiSchema.textAlign === 'center' ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-primary" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-primary truncate">
-                    {(() => {
-                      try {
-                        return new URL(event.location.startsWith('http') ? event.location : `https://${event.location}`).hostname;
-                      } catch {
-                        return event.location;
-                      }
-                    })()}
+                <div className="text-center">
+                  <p className="font-medium text-foreground">{format(event.startTime, 'EEEE, MMMM d, yyyy')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(event.startTime, 'h:mm a')}
+                    {event.endTime && ` - ${format(event.endTime, 'h:mm a')}`}
                   </p>
-                  <p className="text-sm text-muted-foreground">Event link</p>
                 </div>
-              </a>
+              </div>
+            ) : (
+              <div className={cn(
+                "flex items-center gap-3 text-foreground",
+                uiSchema.textAlign === 'right' && "justify-end"
+              )}>
+                <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-5 h-5 text-primary" />
+                </div>
+                <div className={textAlignClasses[uiSchema.textAlign]}>
+                  <p className="font-medium">{format(event.startTime, 'EEEE, MMMM d, yyyy')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(event.startTime, 'h:mm a')}
+                    {event.endTime && ` - ${format(event.endTime, 'h:mm a')}`}
+                  </p>
+                </div>
+              </div>
             )}
 
+            {/* Location link - stacked layout for center alignment */}
+            {event.location && (
+              uiSchema.textAlign === 'center' ? (
+                <a 
+                  href={event.location.startsWith('http') ? event.location : `https://${event.location}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                    <ExternalLink className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium text-primary">
+                      {(() => {
+                        try {
+                          return new URL(event.location.startsWith('http') ? event.location : `https://${event.location}`).hostname;
+                        } catch {
+                          return event.location;
+                        }
+                      })()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Event link</p>
+                  </div>
+                </a>
+              ) : (
+                <a 
+                  href={event.location.startsWith('http') ? event.location : `https://${event.location}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity",
+                    uiSchema.textAlign === 'right' && "justify-end"
+                  )}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                    <ExternalLink className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className={cn("flex-1 min-w-0", textAlignClasses[uiSchema.textAlign])}>
+                    <p className="font-medium text-primary truncate">
+                      {(() => {
+                        try {
+                          return new URL(event.location.startsWith('http') ? event.location : `https://${event.location}`).hostname;
+                        } catch {
+                          return event.location;
+                        }
+                      })()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Event link</p>
+                  </div>
+                </a>
+              )
+            )}
+
+            {/* URL link - stacked layout for center alignment */}
             {event.url && (
-              <a 
-                href={event.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity"
-              >
-                <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                  <ExternalLink className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-primary truncate">{new URL(event.url).hostname}</p>
-                  <p className="text-sm text-muted-foreground">Event link</p>
-                </div>
-              </a>
+              uiSchema.textAlign === 'center' ? (
+                <a 
+                  href={event.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                    <ExternalLink className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium text-primary truncate">{new URL(event.url).hostname}</p>
+                    <p className="text-sm text-muted-foreground">Event link</p>
+                  </div>
+                </a>
+              ) : (
+                <a 
+                  href={event.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "flex items-center gap-3 text-foreground hover:opacity-80 transition-opacity",
+                    uiSchema.textAlign === 'right' && "justify-end"
+                  )}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                    <ExternalLink className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className={cn("flex-1 min-w-0", textAlignClasses[uiSchema.textAlign])}>
+                    <p className="font-medium text-primary truncate">{new URL(event.url).hostname}</p>
+                    <p className="text-sm text-muted-foreground">Event link</p>
+                  </div>
+                </a>
+              )
             )}
           </div>
 
@@ -121,7 +224,15 @@ export function EventCard({ event, onAddToCalendar }: EventCardProps) {
           {/* Calendar Button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="glow" size="lg" className="w-full">
+              <Button 
+                variant={uiSchema.buttonStyle === 'minimal' ? 'outline' : 'glow'} 
+                size="lg" 
+                className={cn(
+                  "w-full",
+                  uiSchema.buttonStyle === 'rounded' && "rounded-full",
+                  uiSchema.buttonStyle === 'minimal' && "border-primary text-primary hover:bg-primary/10"
+                )}
+              >
                 <CalendarPlus className="w-5 h-5" />
                 Add to Calendar
               </Button>
