@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Calendar, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Calendar, Mail, Lock, ArrowRight, Chrome } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
   const [isLoading, setIsLoading] = useState(false);
-  const { user, signUp, signIn } = useAuth();
+  const { user, signUp, signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -66,6 +66,20 @@ const Auth = () => {
       toast({
         title: isSignUp ? 'Account created!' : 'Welcome back!',
         description: isSignUp ? 'You can now create event pages.' : 'Redirecting to your dashboard.',
+      });
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    const { error } = await signInWithGoogle();
+    setIsLoading(false);
+    
+    if (error) {
+      toast({
+        title: 'Google sign in failed',
+        description: error.message,
+        variant: 'destructive',
       });
     }
   };
@@ -144,6 +158,27 @@ const Auth = () => {
               >
                 {isLoading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
                 <ArrowRight className="w-4 h-4" />
+              </Button>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
+              >
+                <Chrome className="w-4 h-4 mr-2" />
+                Google
               </Button>
             </form>
 
