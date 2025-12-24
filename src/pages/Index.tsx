@@ -188,7 +188,7 @@ const Index = () => {
             </div>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground leading-tight mb-6 animate-fade-up delay-100">
+          <h1 className="text-4xl md:text-6xl font-bold text-foreground leading-tight mb-6 animate-fade-up delay-100 text-center">
             Drop events into{" "}
             <span className="text-gradient">any calendar</span>
           </h1>
