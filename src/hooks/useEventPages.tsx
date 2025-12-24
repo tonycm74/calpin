@@ -18,6 +18,7 @@ export interface EventPage {
   slug: string;
   reminder_minutes: number[] | null;
   ui_schema: Record<string, unknown> | null;
+  timezone: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +86,7 @@ export function useCreateEventPage() {
           slug: generateSlug(event.title),
           reminder_minutes: event.reminderMinutes || [60, 1440],
           ui_schema: (event.uiSchema || defaultUISchema) as unknown as Json,
+          timezone: event.timezone || 'America/New_York',
         }])
         .select()
         .single();
@@ -175,6 +177,7 @@ export function useUpdateEventPage() {
           image_url: event.imageUrl || null,
           reminder_minutes: event.reminderMinutes || [60, 1440],
           ui_schema: (event.uiSchema || defaultUISchema) as unknown as Json,
+          timezone: event.timezone || 'America/New_York',
         })
         .eq('id', event.id)
         .eq('user_id', user.id)
@@ -216,5 +219,6 @@ export function eventPageToEventData(page: EventPage): EventData {
     slug: page.slug,
     reminderMinutes: page.reminder_minutes || [60, 1440],
     uiSchema: (page.ui_schema as unknown as UISchema) || defaultUISchema,
+    timezone: page.timezone || 'America/New_York',
   };
 }

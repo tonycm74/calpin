@@ -33,7 +33,7 @@ const EventPage = () => {
   if (error || !eventPage) {
     return (
       <>
-        <SEOHead title="Event Not Found | CalDrop" />
+        <SEOHead title="Event Not Found | CalPing" />
         <div className="min-h-screen bg-background">
           <header className="border-b border-border">
             <div className="container py-4">
@@ -41,7 +41,7 @@ const EventPage = () => {
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <Calendar className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold text-foreground">CalDrop</span>
+                <span className="text-lg font-bold text-foreground">CalPing</span>
               </Link>
             </div>
           </header>
@@ -59,7 +59,7 @@ const EventPage = () => {
   return (
     <>
       <SEOHead 
-        title={`${eventPage.title} | CalDrop`}
+        title={`${eventPage.title} | CalPing`}
         description={eventPage.description || `Add ${eventPage.title} to your calendar`}
       />
       <div className="min-h-screen bg-background flex items-center justify-center p-4">

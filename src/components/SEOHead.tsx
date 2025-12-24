@@ -7,9 +7,9 @@ interface SEOHeadProps {
 }
 
 export function SEOHead({
-  title = "CalDrop - Drop Events Into Any Calendar",
+  title = "CalPing - Drop Events Into Any Calendar",
   description = "Create beautiful, mobile-first landing pages that let anyone add your events to Google, Apple, or Outlook calendar with one tap.",
-  canonical = "https://caldrop.app",
+  canonical = "https://calping.com",
 }: SEOHeadProps) {
   return (
     <Helmet>

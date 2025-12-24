@@ -5,7 +5,7 @@ import { useAuth } from './useAuth';
 
 // Generate or retrieve a persistent visitor ID
 function getVisitorId(): string {
-  const storageKey = 'caldrop_visitor_id';
+  const storageKey = 'calping_visitor_id';
   let visitorId = localStorage.getItem(storageKey);
   
   if (!visitorId) {

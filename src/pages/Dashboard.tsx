@@ -4,7 +4,7 @@ import { Calendar, Plus, ExternalLink, Trash2, Copy, LogOut, Pencil } from 'luci
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { SEOHead } from '@/components/SEOHead';
-import { CreateEventForm } from '@/components/CreateEventForm';
+import { CreateEventWizard } from '@/components/CreateEventWizard';
 import { MiniAnalytics } from '@/components/MiniAnalytics';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventPages, useDeleteEventPage, eventPageToEventData, EventPage } from '@/hooks/useEventPages';
@@ -56,7 +56,7 @@ const Dashboard = () => {
   if (showForm) {
     return (
       <>
-        <SEOHead title={editingEvent ? "Edit Event | CalDrop" : "Create Event | CalDrop"} />
+        <SEOHead title={editingEvent ? "Edit Event | CalPing" : "Create Event | CalPing"} />
         <div className="min-h-screen bg-background">
           <header className="border-b border-border">
             <div className="container py-4 flex items-center justify-between">
@@ -64,29 +64,19 @@ const Dashboard = () => {
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <Calendar className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold text-foreground">CalDrop</span>
+                <span className="text-lg font-bold text-foreground">CalPing</span>
               </button>
-              <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingEvent(null); }}>
-                Cancel
-              </Button>
             </div>
           </header>
 
           <main className="container py-12">
-            <div className="max-w-4xl mx-auto">
-              <div className="mb-8 animate-fade-up">
-                <h1 className="text-2xl font-bold text-foreground mb-2">
-                  {editingEvent ? 'Edit Event Page' : 'Create Event Page'}
-                </h1>
-                <p className="text-muted-foreground">
-                  {editingEvent ? 'Update your event details and styling.' : 'Set up your event and get a shareable link.'}
-                </p>
-              </div>
-              <div className="animate-fade-up delay-100">
-                <CreateEventForm 
+            <div className="max-w-5xl mx-auto">
+              <div className="animate-fade-up">
+                <CreateEventWizard 
                   onEventCreated={handleEventCreated} 
                   existingEvent={editingEvent || undefined}
                   mode={editingEvent ? 'edit' : 'create'}
+                  onCancel={() => { setShowForm(false); setEditingEvent(null); }}
                 />
               </div>
             </div>
@@ -98,7 +88,7 @@ const Dashboard = () => {
 
   return (
     <>
-      <SEOHead title="Dashboard | CalDrop" />
+      <SEOHead title="Dashboard | CalPing" />
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b border-border">
@@ -107,7 +97,7 @@ const Dashboard = () => {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="text-lg font-bold text-foreground">CalDrop</span>
+              <span className="text-lg font-bold text-foreground">CalPing</span>
             </Link>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground hidden sm:block">
