@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { EventData, UISchema, defaultUISchema, generateSlug } from '@/lib/calendar';
 import { useToast } from '@/hooks/use-toast';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface EventPage {
   id: string;
@@ -72,7 +73,7 @@ export function useCreateEventPage() {
 
       const { data, error } = await supabase
         .from('event_pages')
-        .insert({
+        .insert([{
           user_id: user.id,
           title: event.title,
           description: event.description || null,
@@ -83,8 +84,8 @@ export function useCreateEventPage() {
           image_url: event.imageUrl || null,
           slug: generateSlug(event.title),
           reminder_minutes: event.reminderMinutes || [60, 1440],
-          ui_schema: event.uiSchema || defaultUISchema,
-        })
+          ui_schema: (event.uiSchema || defaultUISchema) as unknown as Json,
+        }])
         .select()
         .single();
 
@@ -173,7 +174,7 @@ export function useUpdateEventPage() {
           url: event.url || null,
           image_url: event.imageUrl || null,
           reminder_minutes: event.reminderMinutes || [60, 1440],
-          ui_schema: event.uiSchema || defaultUISchema,
+          ui_schema: (event.uiSchema || defaultUISchema) as unknown as Json,
         })
         .eq('id', event.id)
         .eq('user_id', user.id)
@@ -214,6 +215,6 @@ export function eventPageToEventData(page: EventPage): EventData {
     imageUrl: page.image_url || undefined,
     slug: page.slug,
     reminderMinutes: page.reminder_minutes || [60, 1440],
-    uiSchema: (page.ui_schema as UISchema) || defaultUISchema,
+    uiSchema: (page.ui_schema as unknown as UISchema) || defaultUISchema,
   };
 }
