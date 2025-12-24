@@ -3,11 +3,15 @@ import { Calendar, Loader2 } from 'lucide-react';
 import { EventCard } from '@/components/EventCard';
 import { SEOHead } from '@/components/SEOHead';
 import { useEventPageBySlug, eventPageToEventData, useTrackCalendarAdd } from '@/hooks/useEventPages';
+import { useTrackPageView } from '@/hooks/useEventAnalytics';
 
 const EventPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: eventPage, isLoading, error } = useEventPageBySlug(slug);
   const trackCalendarAdd = useTrackCalendarAdd();
+  
+  // Track page view when event loads
+  useTrackPageView(eventPage?.id);
 
   const handleAddToCalendar = (calendarType: string) => {
     if (eventPage) {

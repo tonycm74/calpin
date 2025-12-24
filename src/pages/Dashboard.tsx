@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, Plus, ExternalLink, Trash2, Copy, LogOut, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { SEOHead } from '@/components/SEOHead';
 import { CreateEventForm } from '@/components/CreateEventForm';
+import { MiniAnalytics } from '@/components/EventAnalytics';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventPages, useDeleteEventPage, eventPageToEventData, EventPage } from '@/hooks/useEventPages';
+import { useAllEventAnalytics } from '@/hooks/useEventAnalytics';
 import { useToast } from '@/hooks/use-toast';
 import { EventData } from '@/lib/calendar';
 
@@ -18,6 +20,13 @@ const Dashboard = () => {
   const { data: eventPages, isLoading } = useEventPages();
   const deleteEvent = useDeleteEventPage();
   const { toast } = useToast();
+
+  // Get event page IDs for analytics fetching
+  const eventPageIds = useMemo(
+    () => eventPages?.map((p) => p.id) || [],
+    [eventPages]
+  );
+  const { data: allAnalytics, isLoading: analyticsLoading } = useAllEventAnalytics(eventPageIds);
 
   const handleSignOut = async () => {
     await signOut();
@@ -140,7 +149,9 @@ const Dashboard = () => {
             </div>
           ) : eventPages && eventPages.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {eventPages.map((page, i) => (
+              {eventPages.map((page, i) => {
+                const analytics = allAnalytics?.[page.id];
+                return (
                 <div
                   key={page.id}
                   className="bg-card rounded-xl border border-border p-5 hover:border-primary/50 transition-colors animate-fade-up"
@@ -149,9 +160,24 @@ const Dashboard = () => {
                   <h3 className="text-lg font-semibold text-foreground mb-1 truncate">
                     {page.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-sm text-muted-foreground">
                     {format(new Date(page.start_time), 'MMM d, yyyy · h:mm a')}
                   </p>
+                  
+                  {/* Analytics */}
+                  <div className="mb-4">
+                    {analyticsLoading ? (
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+                        <div className="h-4 w-16 bg-secondary/50 rounded animate-pulse" />
+                        <div className="h-4 w-12 bg-secondary/50 rounded animate-pulse" />
+                      </div>
+                    ) : (
+                      <MiniAnalytics
+                        totalViews={analytics?.total_views || 0}
+                        calendarAdds={analytics?.calendar_adds?.total || 0}
+                      />
+                    )}
+                  </div>
                   
                   <div className="flex items-center gap-2">
                     <Button
@@ -189,7 +215,8 @@ const Dashboard = () => {
                     </Button>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           ) : (
             <div className="text-center py-16 animate-fade-up">
