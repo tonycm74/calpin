@@ -3,7 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Clock, FileText, Bell, Link as LinkIcon } from "lucide-react";
+import { Calendar as CalendarIcon, FileText, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ImageUpload } from "@/components/ImageUpload";
 import { EventCard } from "@/components/EventCard";
+import { TimePicker } from "@/components/TimePicker";
+import { ReminderSettings } from "@/components/ReminderSettings";
 import { EventData, generateSlug } from "@/lib/calendar";
 import { useCreateEventPage } from "@/hooks/useEventPages";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +37,7 @@ interface CreateEventFormProps {
 
 export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
   const [imageUrl, setImageUrl] = useState<string | undefined>();
+  const [reminders, setReminders] = useState<number[]>([60, 1440]);
   const createEvent = useCreateEventPage();
   const { user } = useAuth();
 
@@ -43,6 +46,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
     handleSubmit,
     watch,
     control,
+    setValue,
     formState: { errors },
   } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
@@ -105,9 +109,9 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       url: undefined,
       imageUrl: imageUrl,
       slug: generateSlug(title || "preview"),
-      reminderMinutes: [60, 1440],
+      reminderMinutes: reminders,
     };
-  }, [watchedValues, imageUrl]);
+  }, [watchedValues, imageUrl, reminders]);
 
   const onSubmit = async (data: EventFormData) => {
     const [startHours, startMinutes] = data.startTime.split(':').map(Number);
@@ -131,7 +135,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       url: undefined,
       imageUrl: imageUrl,
       slug: generateSlug(data.title),
-      reminderMinutes: [60, 1440],
+      reminderMinutes: reminders,
     };
 
     if (user) {
@@ -202,7 +206,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
                     {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 bg-popover border-border" align="start">
                   <Calendar
                     mode="single"
                     selected={field.value}
@@ -214,10 +218,16 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
               </Popover>
             )}
           />
-          <Input
-            type="time"
-            {...register("startTime")}
-            className="bg-card border-border focus:border-primary"
+          <Controller
+            control={control}
+            name="startTime"
+            render={({ field }) => (
+              <TimePicker
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Select time"
+              />
+            )}
           />
         </div>
         {(errors.startDate || errors.startTime) && (
@@ -230,7 +240,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
       {/* End Date & Time */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2 text-foreground">
-          <Clock className="w-4 h-4 text-muted-foreground" />
+          <CalendarIcon className="w-4 h-4 text-muted-foreground" />
           End Date & Time (optional)
         </Label>
         <div className="grid grid-cols-2 gap-3">
@@ -251,7 +261,7 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
                     {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 bg-popover border-border" align="start">
                   <Calendar
                     mode="single"
                     selected={field.value ?? undefined}
@@ -263,10 +273,16 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
               </Popover>
             )}
           />
-          <Input
-            type="time"
-            {...register("endTime")}
-            className="bg-card border-border focus:border-primary"
+          <Controller
+            control={control}
+            name="endTime"
+            render={({ field }) => (
+              <TimePicker
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Select time"
+              />
+            )}
           />
         </div>
       </div>
@@ -286,16 +302,8 @@ export function CreateEventForm({ onEventCreated }: CreateEventFormProps) {
         />
       </div>
 
-      {/* Reminders Note */}
-      <div className="flex items-start gap-3 p-4 bg-secondary/50 rounded-lg border border-border">
-        <Bell className="w-5 h-5 text-primary mt-0.5" />
-        <div>
-          <p className="text-sm font-medium text-foreground">Default Reminders</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Visitors will get reminders 1 hour and 1 day before the event.
-          </p>
-        </div>
-      </div>
+      {/* Reminder Settings */}
+      <ReminderSettings value={reminders} onChange={setReminders} />
 
       {/* Submit Button */}
       <Button
