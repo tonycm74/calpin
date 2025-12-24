@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { SEOHead } from '@/components/SEOHead';
 import { CreateEventForm } from '@/components/CreateEventForm';
-import { MiniAnalytics } from '@/components/EventAnalytics';
+import { MiniAnalytics } from '@/components/MiniAnalytics';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventPages, useDeleteEventPage, eventPageToEventData, EventPage } from '@/hooks/useEventPages';
 import { useAllEventAnalytics } from '@/hooks/useEventAnalytics';

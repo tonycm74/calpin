@@ -85,7 +85,7 @@ export function useEventAnalytics(eventPageId: string | undefined) {
       });
 
       if (error) throw error;
-      return data as EventAnalytics | null;
+      return data as unknown as EventAnalytics | null;
     },
     enabled: !!eventPageId && !!user,
     staleTime: 30000, // Cache for 30 seconds
@@ -113,7 +113,7 @@ export function useAllEventAnalytics(eventPageIds: string[]) {
           });
 
           if (!error && data) {
-            results[id] = data as EventAnalytics;
+            results[id] = data as unknown as EventAnalytics;
           }
         })
       );
