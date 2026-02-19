@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { EventData, UISchema, defaultUISchema, generateSlug } from '@/lib/calendar';
+import { EventData, UISchema, defaultUISchema, generateSlug, PageType } from '@/lib/calendar';
+import { RecurrenceRule, generateOccurrences } from '@/lib/recurrence';
 import { useToast } from '@/hooks/use-toast';
 import type { Json } from '@/integrations/supabase/types';
 
@@ -19,6 +20,12 @@ export interface EventPage {
   reminder_minutes: number[] | null;
   ui_schema: Record<string, unknown> | null;
   timezone: string | null;
+  page_type: string;
+  capacity: number | null;
+  recurrence_rule: Record<string, unknown> | null;
+  parent_event_id: string | null;
+  is_recurring_parent: boolean;
+  category: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +42,7 @@ export function useEventPages() {
         .from('event_pages')
         .select('*')
         .eq('user_id', user.id)
+        .eq('is_recurring_parent', false)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -87,6 +95,9 @@ export function useCreateEventPage() {
           reminder_minutes: event.reminderMinutes || [60, 1440],
           ui_schema: (event.uiSchema || defaultUISchema) as unknown as Json,
           timezone: event.timezone || 'America/New_York',
+          page_type: event.pageType || 'calendar',
+          capacity: event.capacity || null,
+          category: event.category || 'other',
         }])
         .select()
         .single();
@@ -178,6 +189,9 @@ export function useUpdateEventPage() {
           reminder_minutes: event.reminderMinutes || [60, 1440],
           ui_schema: (event.uiSchema || defaultUISchema) as unknown as Json,
           timezone: event.timezone || 'America/New_York',
+          page_type: event.pageType || 'calendar',
+          capacity: event.capacity || null,
+          category: event.category || 'other',
         })
         .eq('id', event.id)
         .eq('user_id', user.id)
@@ -205,6 +219,95 @@ export function useUpdateEventPage() {
   });
 }
 
+export function useCreateRecurringEvent() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (event: EventData & { recurrenceRule: RecurrenceRule }) => {
+      if (!user) throw new Error('Must be logged in');
+
+      // 1. Insert parent template (hidden)
+      const { data: parent, error: parentError } = await supabase
+        .from('event_pages')
+        .insert([{
+          user_id: user.id,
+          title: event.title,
+          description: event.description || null,
+          start_time: event.startTime.toISOString(),
+          end_time: event.endTime?.toISOString() || null,
+          location: event.location || null,
+          url: event.url || null,
+          image_url: event.imageUrl || null,
+          slug: generateSlug(event.title + '-series'),
+          reminder_minutes: event.reminderMinutes || [60, 1440],
+          ui_schema: (event.uiSchema || defaultUISchema) as unknown as Json,
+          timezone: event.timezone || 'America/New_York',
+          page_type: event.pageType || 'calendar',
+          capacity: event.capacity || null,
+          category: event.category || 'other',
+          is_recurring_parent: true,
+          recurrence_rule: event.recurrenceRule as unknown as Json,
+        }])
+        .select()
+        .single();
+
+      if (parentError) throw parentError;
+
+      // 2. Generate occurrences
+      const occurrences = generateOccurrences(
+        event.startTime,
+        event.endTime,
+        event.recurrenceRule,
+      );
+
+      // 3. Batch insert child rows
+      const children = occurrences.map((occ) => ({
+        user_id: user.id,
+        title: event.title,
+        description: event.description || null,
+        start_time: occ.startTime.toISOString(),
+        end_time: occ.endTime?.toISOString() || null,
+        location: event.location || null,
+        url: event.url || null,
+        image_url: event.imageUrl || null,
+        slug: generateSlug(event.title),
+        reminder_minutes: event.reminderMinutes || [60, 1440],
+        ui_schema: (event.uiSchema || defaultUISchema) as unknown as Json,
+        timezone: event.timezone || 'America/New_York',
+        page_type: event.pageType || 'calendar',
+        capacity: event.capacity || null,
+        category: event.category || 'other',
+        parent_event_id: parent.id,
+        is_recurring_parent: false,
+      }));
+
+      const { error: childError } = await supabase
+        .from('event_pages')
+        .insert(children);
+
+      if (childError) throw childError;
+
+      return parent as EventPage;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-pages'] });
+      toast({
+        title: 'Recurring event created!',
+        description: 'All occurrences have been generated.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error creating recurring event',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
 // Helper to convert database EventPage to EventData
 export function eventPageToEventData(page: EventPage): EventData {
   return {
@@ -220,5 +323,11 @@ export function eventPageToEventData(page: EventPage): EventData {
     reminderMinutes: page.reminder_minutes || [60, 1440],
     uiSchema: (page.ui_schema as unknown as UISchema) || defaultUISchema,
     timezone: page.timezone || 'America/New_York',
+    pageType: (page.page_type as PageType) || 'calendar',
+    capacity: page.capacity || undefined,
+    recurrenceRule: (page.recurrence_rule as unknown as RecurrenceRule) || undefined,
+    parentEventId: page.parent_event_id || undefined,
+    isRecurringParent: page.is_recurring_parent,
+    category: page.category || undefined,
   };
 }

@@ -45,12 +45,18 @@ export type Database = {
       }
       event_pages: {
         Row: {
+          capacity: number | null
+          category: string | null
           created_at: string
           description: string | null
           end_time: string | null
           id: string
           image_url: string | null
+          is_recurring_parent: boolean
           location: string | null
+          page_type: string
+          parent_event_id: string | null
+          recurrence_rule: Json | null
           reminder_minutes: number[] | null
           slug: string
           start_time: string
@@ -61,12 +67,18 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          capacity?: number | null
+          category?: string | null
           created_at?: string
           description?: string | null
           end_time?: string | null
           id?: string
           image_url?: string | null
+          is_recurring_parent?: boolean
           location?: string | null
+          page_type?: string
+          parent_event_id?: string | null
+          recurrence_rule?: Json | null
           reminder_minutes?: number[] | null
           slug: string
           start_time: string
@@ -77,12 +89,18 @@ export type Database = {
           user_id: string
         }
         Update: {
+          capacity?: number | null
+          category?: string | null
           created_at?: string
           description?: string | null
           end_time?: string | null
           id?: string
           image_url?: string | null
+          is_recurring_parent?: boolean
           location?: string | null
+          page_type?: string
+          parent_event_id?: string | null
+          recurrence_rule?: Json | null
           reminder_minutes?: number[] | null
           slug?: string
           start_time?: string
@@ -93,6 +111,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      event_rsvps: {
+        Row: {
+          created_at: string
+          email: string
+          event_page_id: string
+          id: string
+          name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          event_page_id: string
+          id?: string
+          name: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          event_page_id?: string
+          id?: string
+          name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvps_event_page_id_fkey"
+            columns: ["event_page_id"]
+            isOneToOne: false
+            referencedRelation: "event_pages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       page_views: {
         Row: {
@@ -136,6 +189,15 @@ export type Database = {
           id: string
           updated_at: string
           user_id: string
+          username: string | null
+          venue_name: string | null
+          venue_description: string | null
+          venue_address: string | null
+          venue_image_url: string | null
+          venue_phone: string | null
+          venue_website: string | null
+          google_place_id: string | null
+          venue_images: string[] | null
         }
         Insert: {
           created_at?: string
@@ -143,6 +205,15 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id: string
+          username?: string | null
+          venue_name?: string | null
+          venue_description?: string | null
+          venue_address?: string | null
+          venue_image_url?: string | null
+          venue_phone?: string | null
+          venue_website?: string | null
+          google_place_id?: string | null
+          venue_images?: string[] | null
         }
         Update: {
           created_at?: string
@@ -150,6 +221,15 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+          username?: string | null
+          venue_name?: string | null
+          venue_description?: string | null
+          venue_address?: string | null
+          venue_image_url?: string | null
+          venue_phone?: string | null
+          venue_website?: string | null
+          google_place_id?: string | null
+          venue_images?: string[] | null
         }
         Relationships: []
       }

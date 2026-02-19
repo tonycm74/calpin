@@ -1,14 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Plus, ExternalLink, Trash2, Copy, LogOut, Pencil } from 'lucide-react';
-import { format } from 'date-fns';
+import { Calendar, Plus, LogOut, Users, Settings, Share2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SEOHead } from '@/components/SEOHead';
 import { CreateEventWizard } from '@/components/CreateEventWizard';
-import { MiniAnalytics } from '@/components/MiniAnalytics';
+import { EventCalendar } from '@/components/EventCalendar';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventPages, useDeleteEventPage, eventPageToEventData, EventPage } from '@/hooks/useEventPages';
-import { useAllEventAnalytics } from '@/hooks/useEventAnalytics';
+import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { EventData } from '@/lib/calendar';
 
@@ -18,15 +17,9 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { data: eventPages, isLoading } = useEventPages();
+  const { data: profile } = useProfile();
   const deleteEvent = useDeleteEventPage();
   const { toast } = useToast();
-
-  // Get event page IDs for analytics fetching
-  const eventPageIds = useMemo(
-    () => eventPages?.map((p) => p.id) || [],
-    [eventPages]
-  );
-  const { data: allAnalytics, isLoading: analyticsLoading } = useAllEventAnalytics(eventPageIds);
 
   const handleSignOut = async () => {
     await signOut();
@@ -49,14 +42,25 @@ const Dashboard = () => {
     navigator.clipboard.writeText(url);
     toast({
       title: 'Link copied!',
-      description: 'Share this link with your audience.',
+      description: 'Share this link with your patrons.',
     });
+  };
+
+  const copyScheduleLink = () => {
+    if (profile?.username) {
+      const url = `${window.location.origin}/${profile.username}`;
+      navigator.clipboard.writeText(url);
+      toast({
+        title: 'Schedule link copied!',
+        description: 'Share this link so patrons can subscribe to your calendar.',
+      });
+    }
   };
 
   if (showForm) {
     return (
       <>
-        <SEOHead title={editingEvent ? "Edit Event | CalPing" : "Create Event | CalPing"} />
+        <SEOHead title={editingEvent ? "Edit Event | CalDrop" : "Add Event | CalDrop"} />
         <div className="min-h-screen bg-background">
           <header className="border-b border-border">
             <div className="container py-4 flex items-center justify-between">
@@ -64,7 +68,7 @@ const Dashboard = () => {
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <Calendar className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold text-foreground">CalPing</span>
+                <span className="text-lg font-bold text-foreground">CalDrop</span>
               </button>
             </div>
           </header>
@@ -72,8 +76,8 @@ const Dashboard = () => {
           <main className="container py-12">
             <div className="max-w-5xl mx-auto">
               <div className="animate-fade-up">
-                <CreateEventWizard 
-                  onEventCreated={handleEventCreated} 
+                <CreateEventWizard
+                  onEventCreated={handleEventCreated}
                   existingEvent={editingEvent || undefined}
                   mode={editingEvent ? 'edit' : 'create'}
                   onCancel={() => { setShowForm(false); setEditingEvent(null); }}
@@ -88,7 +92,7 @@ const Dashboard = () => {
 
   return (
     <>
-      <SEOHead title="Dashboard | CalPing" />
+      <SEOHead title="Dashboard | CalDrop" />
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b border-border">
@@ -97,9 +101,21 @@ const Dashboard = () => {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="text-lg font-bold text-foreground">CalPing</span>
+              <span className="text-lg font-bold text-foreground">CalDrop</span>
             </Link>
             <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/dashboard/attendees">
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">Attendees</span>
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/dashboard/settings">
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">Venue</span>
+                </Link>
+              </Button>
               <span className="text-sm text-muted-foreground hidden sm:block">
                 {user?.email}
               </span>
@@ -112,119 +128,61 @@ const Dashboard = () => {
         </header>
 
         <main className="container py-8">
+          {/* Venue setup banner */}
+          {!profile?.username && (
+            <div className="mb-6 bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-up">
+              <div>
+                <p className="font-medium text-foreground">Set up your venue URL to share your schedule</p>
+                <p className="text-sm text-muted-foreground">Get a public page where patrons can subscribe to your events</p>
+              </div>
+              <Button variant="glow" size="sm" asChild>
+                <Link to="/dashboard/settings">
+                  <Settings className="w-4 h-4" />
+                  Set Up Venue
+                </Link>
+              </Button>
+            </div>
+          )}
+
+          {/* Share schedule button (when username is set) */}
+          {profile?.username && (
+            <div className="mb-6 flex items-center gap-2 animate-fade-up">
+              <Button variant="outline" size="sm" onClick={copyScheduleLink}>
+                <Share2 className="w-4 h-4" />
+                Share Schedule
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to={`/${profile.username}`}>
+                  <ExternalLink className="w-4 h-4" />
+                  View Public Page
+                </Link>
+              </Button>
+            </div>
+          )}
+
           {/* Header */}
-          <div className="flex items-center justify-between mb-8 animate-fade-up">
+          <div className="flex items-center justify-between mb-6 animate-fade-up">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Your Events</h1>
+              <h1 className="text-2xl font-bold text-foreground">Your Schedule</h1>
               <p className="text-muted-foreground">
-                Create and manage your event pages
+                Click any date to add an event
               </p>
             </div>
             <Button variant="glow" onClick={() => setShowForm(true)}>
               <Plus className="w-4 h-4" />
-              New Event
+              Add Event
             </Button>
           </div>
 
-          {/* Events Grid */}
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-card rounded-xl border border-border p-5 animate-pulse">
-                  <div className="h-6 bg-secondary rounded w-3/4 mb-3" />
-                  <div className="h-4 bg-secondary rounded w-1/2 mb-4" />
-                  <div className="h-8 bg-secondary rounded w-full" />
-                </div>
-              ))}
-            </div>
-          ) : eventPages && eventPages.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {eventPages.map((page, i) => {
-                const analytics = allAnalytics?.[page.id];
-                return (
-                <div
-                  key={page.id}
-                  className="bg-card rounded-xl border border-border p-5 hover:border-primary/50 transition-colors animate-fade-up"
-                  style={{ animationDelay: `${i * 100}ms` }}
-                >
-                  <h3 className="text-lg font-semibold text-foreground mb-1 truncate">
-                    {page.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(page.start_time), 'MMM d, yyyy · h:mm a')}
-                  </p>
-                  
-                  {/* Analytics */}
-                  <div className="mb-4">
-                    {analyticsLoading ? (
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
-                        <div className="h-4 w-16 bg-secondary/50 rounded animate-pulse" />
-                        <div className="h-4 w-12 bg-secondary/50 rounded animate-pulse" />
-                      </div>
-                    ) : (
-                      <MiniAnalytics
-                        totalViews={analytics?.total_views || 0}
-                        calendarAdds={analytics?.calendar_adds?.total || 0}
-                      />
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => copyLink(page.slug)}
-                    >
-                      <Copy className="w-4 h-4" />
-                      Copy Link
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleEditEvent(page)}
-                      title="Edit event"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      asChild
-                    >
-                      <Link to={`/e/${page.slug}`} target="_blank">
-                        <ExternalLink className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => deleteEvent.mutate(page.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-16 animate-fade-up">
-              <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">
-                No events yet
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                Create your first event page to get started
-              </p>
-              <Button variant="glow" onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4" />
-                Create Event
-              </Button>
-            </div>
-          )}
+          {/* Calendar */}
+          <EventCalendar
+            eventPages={eventPages}
+            isLoading={isLoading}
+            onCreateEvent={() => setShowForm(true)}
+            onEditEvent={handleEditEvent}
+            onDeleteEvent={(id) => deleteEvent.mutate(id)}
+            onCopyLink={copyLink}
+          />
         </main>
       </div>
     </>

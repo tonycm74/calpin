@@ -86,7 +86,7 @@ const Auth = () => {
 
   return (
     <>
-      <SEOHead title={isSignUp ? 'Sign Up | CalPing' : 'Sign In | CalPing'} />
+      <SEOHead title={isSignUp ? 'Sign Up | CalDrop' : 'Sign In | CalDrop'} />
       <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}
         <header className="border-b border-border">
@@ -95,7 +95,7 @@ const Auth = () => {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="text-lg font-bold text-foreground">CalPing</span>
+              <span className="text-lg font-bold text-foreground">CalDrop</span>
             </Link>
           </div>
         </header>
@@ -108,9 +108,9 @@ const Auth = () => {
                 {isSignUp ? 'Create your account' : 'Welcome back'}
               </h1>
               <p className="text-muted-foreground">
-                {isSignUp 
-                  ? 'Start creating shareable event pages' 
-                  : 'Sign in to manage your events'}
+                {isSignUp
+                  ? "Set up your venue's event calendar"
+                  : 'Sign in to manage your venue'}
               </p>
             </div>
 

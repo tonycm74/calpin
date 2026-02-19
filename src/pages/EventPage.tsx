@@ -4,14 +4,22 @@ import { EventCard } from '@/components/EventCard';
 import { SEOHead } from '@/components/SEOHead';
 import { useEventPageBySlug, eventPageToEventData, useTrackCalendarAdd } from '@/hooks/useEventPages';
 import { useTrackPageView } from '@/hooks/useEventAnalytics';
+import { useSubmitRsvp, useRsvpCount } from '@/hooks/useEventRsvps';
 
 const EventPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: eventPage, isLoading, error } = useEventPageBySlug(slug);
   const trackCalendarAdd = useTrackCalendarAdd();
-  
+  const submitRsvp = useSubmitRsvp();
+
   // Track page view when event loads
   useTrackPageView(eventPage?.id);
+
+  // Fetch RSVP count for waitlist pages
+  const pageType = eventPage?.page_type || 'calendar';
+  const { data: rsvpCount } = useRsvpCount(
+    pageType !== 'calendar' ? eventPage?.id : undefined
+  );
 
   const handleAddToCalendar = (calendarType: string) => {
     if (eventPage) {
@@ -20,6 +28,21 @@ const EventPage = () => {
         calendarType,
       });
     }
+  };
+
+  const handleRsvp = async (name: string, email: string) => {
+    if (!eventPage) return;
+
+    const isFull = pageType === 'waitlist'
+      && eventPage.capacity != null
+      && (rsvpCount || 0) >= eventPage.capacity;
+
+    await submitRsvp.mutateAsync({
+      eventPageId: eventPage.id,
+      name,
+      email,
+      status: isFull ? 'waitlisted' : 'confirmed',
+    });
   };
 
   if (isLoading) {
@@ -33,7 +56,7 @@ const EventPage = () => {
   if (error || !eventPage) {
     return (
       <>
-        <SEOHead title="Event Not Found | CalPing" />
+        <SEOHead title="Event Not Found | CalDrop" />
         <div className="min-h-screen bg-background">
           <header className="border-b border-border">
             <div className="container py-4">
@@ -41,7 +64,7 @@ const EventPage = () => {
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <Calendar className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold text-foreground">CalPing</span>
+                <span className="text-lg font-bold text-foreground">CalDrop</span>
               </Link>
             </div>
           </header>
@@ -58,16 +81,18 @@ const EventPage = () => {
 
   return (
     <>
-      <SEOHead 
-        title={`${eventPage.title} | CalPing`}
+      <SEOHead
+        title={`${eventPage.title} | CalDrop`}
         description={eventPage.description || `Add ${eventPage.title} to your calendar`}
       />
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         {/* Event Content */}
         <div className="w-full max-w-md animate-fade-up">
-          <EventCard 
-            event={eventData} 
+          <EventCard
+            event={eventData}
             onAddToCalendar={handleAddToCalendar}
+            onRsvp={handleRsvp}
+            rsvpCount={rsvpCount || 0}
           />
         </div>
 

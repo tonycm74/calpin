@@ -1,23 +1,24 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { 
-  Calendar, 
-  ArrowRight, 
-  Zap, 
-  Smartphone, 
-  Bell, 
-  Link as LinkIcon, 
+import {
+  Calendar,
+  ArrowRight,
+  Zap,
+  Smartphone,
+  Bell,
+  Link as LinkIcon,
   User,
   Share2,
   MousePointerClick,
   CalendarPlus,
   Users,
-  Megaphone,
-  PartyPopper,
-  Music,
-  Video,
   Check,
-  Sparkles
+  Sparkles,
+  Repeat,
+  Beer,
+  Mic2,
+  Music,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateEventWizard } from "@/components/CreateEventWizard";
@@ -50,13 +51,13 @@ const Index = () => {
   // Demo event for the preview
   const demoEvent: EventData = {
     id: "demo",
-    title: "Summer Music Festival 2025",
-    description: "Join us for an unforgettable weekend of\nlive music, food, and fun!",
-    startTime: new Date(2025, 6, 15, 14, 0),
-    endTime: new Date(2025, 6, 15, 22, 0),
-    location: "https://tickets.example.com",
-    imageUrl: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&auto=format&fit=crop&q=60",
-    slug: "summer-fest-2025",
+    title: "Tuesday Trivia Night",
+    description: "Teams of up to 6. Prizes for top 3.\nFree to play — just grab a drink!",
+    startTime: new Date(2026, 2, 24, 19, 0),
+    endTime: new Date(2026, 2, 24, 21, 0),
+    location: "The Local Tap Room",
+    imageUrl: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=800&auto=format&fit=crop&q=60",
+    slug: "tuesday-trivia",
     reminderMinutes: [60, 1440],
     uiSchema: {
       textAlign: 'center',
@@ -71,7 +72,7 @@ const Index = () => {
   if (createdEvent) {
     return (
       <>
-        <SEOHead title={`${createdEvent.title} | CalPing`} />
+        <SEOHead title={`${createdEvent.title} | CalDrop`} />
         <div className="min-h-screen bg-background">
           {/* Header */}
           <header className="border-b border-border">
@@ -80,7 +81,7 @@ const Index = () => {
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <Calendar className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold text-foreground">CalPing</span>
+                <span className="text-lg font-bold text-foreground">CalDrop</span>
               </Link>
               <Button
                 variant="outline"
@@ -103,7 +104,7 @@ const Index = () => {
                 <span className="text-sm font-medium text-primary">Preview Mode</span>
               </div>
               <h2 className="text-xl font-semibold text-foreground mb-2">
-                Here's how your visitors will see it
+                Here's how your patrons will see it
               </h2>
               <p className="text-sm text-muted-foreground">
                 <Link to="/auth" className="text-primary hover:underline">Sign in</Link> to save and share your events
@@ -139,7 +140,7 @@ const Index = () => {
   if (showForm) {
     return (
       <>
-        <SEOHead title="Create Event Page | CalPing" />
+        <SEOHead title="Add Event | CalDrop" />
         <div className="min-h-screen bg-background">
           {/* Header */}
           <header className="border-b border-border">
@@ -151,7 +152,7 @@ const Index = () => {
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <Calendar className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-lg font-bold text-foreground">CalPing</span>
+                <span className="text-lg font-bold text-foreground">CalDrop</span>
               </button>
               <Button variant="outline" size="sm" asChild>
                 <Link to="/auth">Sign In</Link>
@@ -163,8 +164,8 @@ const Index = () => {
           <main className="container py-12">
             <div className="max-w-5xl mx-auto">
               <div className="animate-fade-up">
-                <CreateEventWizard 
-                  onEventCreated={handleEventCreated} 
+                <CreateEventWizard
+                  onEventCreated={handleEventCreated}
                   onCancel={() => setShowForm(false)}
                 />
               </div>
@@ -182,7 +183,7 @@ const Index = () => {
       <div className="min-h-screen bg-background overflow-hidden relative">
         {/* Mesh gradient background */}
         <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
-        
+
         {/* Animated orbs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-float" />
@@ -196,7 +197,7 @@ const Index = () => {
               <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/25">
                 <Calendar className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-semibold text-foreground tracking-tight">CalPing</span>
+              <span className="text-xl font-semibold text-foreground tracking-tight">CalDrop</span>
             </div>
             <div className="flex items-center gap-3">
               {user ? (
@@ -226,20 +227,20 @@ const Index = () => {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 <span className="text-sm font-medium text-foreground/80">
-                  The simplest way to share events
+                  Built for bars, restaurants & venues
                 </span>
               </div>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-foreground leading-[1.1] mb-6 animate-fade-up delay-100 tracking-tight">
-              Share your events into
+              Your venue's events,
               <br />
-              <span className="text-gradient">any calendar</span>
+              <span className="text-gradient">in every calendar</span>
             </h1>
 
             <p className="text-lg md:text-xl text-foreground/80 mb-10 max-w-2xl mx-auto animate-fade-up delay-200 leading-relaxed">
-              Create a shareable link. Anyone who clicks it can add your event to their 
-              Google, Apple, or Outlook calendar with one tap. No app needed.
+              Publish your weekly schedule — trivia, karaoke, live music, happy hour — and
+              let your regulars subscribe with one tap. They'll never miss a night.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-300">
@@ -249,7 +250,7 @@ const Index = () => {
                 onClick={user ? handleGetStarted : () => setShowForm(true)}
                 className="group"
               >
-                {user ? 'Go to Dashboard' : 'Create Your First Event'}
+                {user ? 'Go to Dashboard' : 'Set Up Your Venue'}
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Button>
               <Button variant="outline" size="lg" className="border-border hover:border-primary/50 hover:bg-primary/5" asChild>
@@ -259,36 +260,36 @@ const Index = () => {
           </section>
 
           {/* ============================================ */}
-          {/* WHAT IS CALPING? */}
+          {/* BUILT FOR VENUES */}
           {/* ============================================ */}
           <section className="py-16 md:py-24">
             <div className="max-w-3xl mx-auto text-center animate-fade-up">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6 tracking-tight">
-                What is CalPing?
+                Built for Venues
               </h2>
               <p className="text-lg text-foreground/80 leading-relaxed mb-8">
-                CalPing turns any event into a <span className="text-foreground font-semibold">beautiful, mobile-first landing page</span> with 
-                calendar buttons built in. Share the link, and your audience can add your event 
-                to their calendar in seconds — complete with reminders so they never miss it.
+                Your bar runs trivia every Tuesday and karaoke every Friday — but your regulars keep forgetting.
+                CalDrop gives your venue a <span className="text-foreground font-semibold">subscribable event calendar</span> that
+                drops your schedule right into their phone. When you add a new event, it shows up automatically.
               </p>
               <div className="inline-flex items-center gap-4 px-5 py-3 rounded-2xl bg-card border border-border">
                 <div className="flex items-center gap-3">
                   {/* Google Calendar */}
-                  <img 
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/2048px-Google_Calendar_icon_%282020%29.svg.png" 
-                    alt="Google Calendar" 
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/2048px-Google_Calendar_icon_%282020%29.svg.png"
+                    alt="Google Calendar"
                     className="w-7 h-7 object-contain"
                   />
                   {/* Apple Calendar */}
-                  <img 
-                    src="https://cdn.jim-nielsen.com/macos/512/calendar-2021-04-29.png?rf=1024" 
-                    alt="Apple Calendar" 
+                  <img
+                    src="https://cdn.jim-nielsen.com/macos/512/calendar-2021-04-29.png?rf=1024"
+                    alt="Apple Calendar"
                     className="w-7 h-7 object-contain"
                   />
                   {/* Outlook Calendar */}
-                  <img 
-                    src="https://cdn.prod.website-files.com/5f196ad93510ee0712a58d15/6346f24b925ee304ff41965c_Outlook.com_icon_(2012-2019).svg.png" 
-                    alt="Outlook Calendar" 
+                  <img
+                    src="https://cdn.prod.website-files.com/5f196ad93510ee0712a58d15/6346f24b925ee304ff41965c_Outlook.com_icon_(2012-2019).svg.png"
+                    alt="Outlook Calendar"
                     className="w-7 h-7 object-contain"
                   />
                 </div>
@@ -316,22 +317,22 @@ const Index = () => {
                 {
                   step: "01",
                   icon: CalendarPlus,
-                  title: "Create Your Event",
-                  description: "Add your event details — title, date, time, description, and an optional image. Customize the look and feel.",
+                  title: "Add Your Events",
+                  description: "Trivia night, karaoke, live music, happy hour — add them once and set them to repeat weekly. Done.",
                   color: "primary",
                 },
                 {
                   step: "02",
                   icon: Share2,
-                  title: "Share the Link",
-                  description: "Get a custom URL for your event page. Share it in emails, social, or anywhere your audience is.",
+                  title: "Share Your Schedule",
+                  description: "Get a public page for your venue. Drop the link in your Instagram bio, print a QR code for the bar, or add it to your website.",
                   color: "accent",
                 },
                 {
                   step: "03",
                   icon: MousePointerClick,
-                  title: "They Tap, It's Added",
-                  description: "Visitors tap one button to add your event to their calendar. Reminders are included automatically.",
+                  title: "Patrons Subscribe",
+                  description: "One tap and your full schedule lands in their Google, Apple, or Outlook calendar. New events sync automatically.",
                   color: "primary",
                 },
               ].map((item, i) => (
@@ -345,12 +346,12 @@ const Index = () => {
                     <div className="text-6xl font-bold text-gradient opacity-20 mb-4">
                       {item.step}
                     </div>
-                    
+
                     {/* Icon */}
                     <div className={`w-14 h-14 rounded-2xl bg-${item.color}/10 border border-${item.color}/20 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300`}>
                       <item.icon className={`w-7 h-7 text-${item.color}`} />
                     </div>
-                    
+
                     <h3 className="text-xl font-semibold text-foreground mb-3 tracking-tight">
                       {item.title}
                     </h3>
@@ -380,14 +381,13 @@ const Index = () => {
                     ready to share
                   </h2>
                   <p className="text-lg text-foreground/80 mb-8 leading-relaxed">
-                    Every CalPing page is mobile-optimized and looks great on any device. 
-                    Your visitors get a clean, focused experience with one clear action: 
-                    add to calendar.
+                    Every event gets a clean, mobile-first page your patrons can tap to add it
+                    to their calendar. Reminders included — so they actually show up.
                   </p>
                   <ul className="space-y-4">
                     {[
-                      "Custom images and styling options",
-                      "Track views and calendar adds",
+                      "Recurring events — set it and forget it",
+                      "RSVP collection to know who's coming",
                       "Works on every device and browser",
                     ].map((feature) => (
                       <li key={feature} className="flex items-center gap-3 text-foreground">
@@ -413,54 +413,54 @@ const Index = () => {
           </section>
 
           {/* ============================================ */}
-          {/* WHY USE CALPING? */}
+          {/* WHY CALDROP? */}
           {/* ============================================ */}
           <section className="py-16 md:py-24">
             <div className="text-center mb-16 animate-fade-up">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
-                Why Use CalPing?
+                Why CalDrop?
               </h2>
               <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-                Stop losing attendees to forgotten events. Here's why CalPing works better.
+                Stop relying on Instagram stories and paper flyers. Here's why venues love CalDrop.
               </p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
               {[
                 {
-                  icon: Smartphone,
-                  title: "Mobile-First Design",
-                  description: "Clean, tap-friendly pages designed for how people actually use their phones.",
-                  gradient: "from-primary/20 to-primary/5",
-                },
-                {
                   icon: Bell,
                   title: "Automatic Reminders",
-                  description: "Every calendar add includes reminders, so your audience shows up — not forgets.",
+                  description: "Patrons get reminded before trivia night, karaoke, or happy hour. They show up — not forget.",
                   gradient: "from-accent/20 to-accent/5",
                 },
                 {
+                  icon: Repeat,
+                  title: "Recurring Events",
+                  description: "Set trivia to repeat every Tuesday. Set karaoke for every Friday. CalDrop generates every occurrence.",
+                  gradient: "from-primary/20 to-primary/5",
+                },
+                {
                   icon: LinkIcon,
-                  title: "One Link, All Calendars",
-                  description: "Works with Google Calendar, Apple Calendar, Outlook, and more. No compatibility issues.",
+                  title: "Subscribable Calendar",
+                  description: "Patrons subscribe once and your full schedule auto-syncs. When you add events, they appear automatically.",
                   gradient: "from-primary/20 to-accent/5",
                 },
                 {
                   icon: Share2,
                   title: "Shareable Anywhere",
-                  description: "Drop your link in Instagram bio, Twitter, email, Slack, Discord — wherever your people are.",
+                  description: "Instagram bio, QR code at the bar, your website, Google Maps listing — put your link wherever your patrons are.",
                   gradient: "from-accent/20 to-primary/5",
                 },
                 {
-                  icon: Zap,
-                  title: "No App Required",
-                  description: "Your audience doesn't need to download anything. Just tap and add. It's that simple.",
+                  icon: Users,
+                  title: "RSVP & Headcounts",
+                  description: "Collect RSVPs to know how many people are coming. Export attendee lists anytime.",
                   gradient: "from-primary/20 to-primary/5",
                 },
                 {
-                  icon: Users,
-                  title: "Track Engagement",
-                  description: "See how many people viewed your page and added your event to their calendar.",
+                  icon: Smartphone,
+                  title: "No App Required",
+                  description: "Your patrons don't need to download anything. Just tap and it's in their calendar. Done.",
                   gradient: "from-accent/20 to-accent/5",
                 },
               ].map((feature, i) => (
@@ -487,7 +487,7 @@ const Index = () => {
           </section>
 
           {/* ============================================ */}
-          {/* USE CASES */}
+          {/* PERFECT FOR */}
           {/* ============================================ */}
           <section className="py-16 md:py-24">
             <div className="text-center mb-16 animate-fade-up">
@@ -495,31 +495,31 @@ const Index = () => {
                 Perfect For
               </h2>
               <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-                Anyone who needs people to show up. Here are some popular use cases.
+                Any venue that runs regular events and wants more people to show up.
               </p>
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
               {[
                 {
-                  icon: Megaphone,
-                  title: "Event Organizers",
-                  examples: "Conferences, meetups, workshops",
+                  icon: Beer,
+                  title: "Bars & Pubs",
+                  examples: "Trivia, karaoke, open mic, DJ nights",
                 },
                 {
-                  icon: Video,
-                  title: "Creators",
-                  examples: "Livestreams, premieres, drops",
+                  icon: UtensilsCrossed,
+                  title: "Restaurants",
+                  examples: "Brunch, wine nights, themed dinners",
                 },
                 {
                   icon: Music,
-                  title: "Musicians & DJs",
-                  examples: "Shows, tours, album releases",
+                  title: "Breweries & Taprooms",
+                  examples: "Live music, food trucks, tastings",
                 },
                 {
-                  icon: PartyPopper,
-                  title: "Personal Events",
-                  examples: "Weddings, parties, reunions",
+                  icon: Mic2,
+                  title: "Event Venues",
+                  examples: "Comedy, bingo, sports watch parties",
                 },
               ].map((useCase, i) => (
                 <div
@@ -545,13 +545,13 @@ const Index = () => {
               <div className="relative">
                 {/* Background glow */}
                 <div className="absolute inset-0 bg-primary/10 rounded-3xl blur-3xl -z-10" />
-                
+
                 <div className="bg-card/50 backdrop-blur-sm rounded-3xl border border-border/50 p-10 md:p-16">
                   <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
-                    Ready to ping your first event?
+                    Ready to fill your venue?
                   </h2>
                   <p className="text-lg text-foreground/70 mb-8 max-w-xl mx-auto">
-                    It's free to get started. Create your event page in under a minute.
+                    It's free to get started. Set up your venue's calendar in under a minute.
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button
@@ -560,7 +560,7 @@ const Index = () => {
                       onClick={user ? handleGetStarted : () => setShowForm(true)}
                       className="group"
                     >
-                      Create Event Page
+                      Set Up Your Venue
                       <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                     </Button>
                     {!user && (
@@ -583,9 +583,9 @@ const Index = () => {
                 <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
                   <Calendar className="w-4 h-4 text-primary" />
                 </div>
-                <span className="font-medium text-foreground">CalPing</span>
+                <span className="font-medium text-foreground">CalDrop</span>
               </div>
-              <p>© {new Date().getFullYear()} CalPing. Drop events into any calendar.</p>
+              <p>&copy; {new Date().getFullYear()} CalDrop. Your venue's events, in every calendar.</p>
             </div>
           </footer>
         </main>

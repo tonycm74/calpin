@@ -14,6 +14,8 @@ export const defaultUISchema: UISchema = {
   buttonStyle: 'default',
 };
 
+export type PageType = 'calendar' | 'rsvp' | 'waitlist';
+
 export interface EventData {
   id?: string;
   title: string;
@@ -27,7 +29,45 @@ export interface EventData {
   reminderMinutes?: number[];
   uiSchema?: UISchema;
   timezone?: string;
+  pageType?: PageType;
+  capacity?: number;
+  recurrenceRule?: import('./recurrence').RecurrenceRule;
+  parentEventId?: string;
+  isRecurringParent?: boolean;
+  category?: string;
 }
+
+export const EVENT_CATEGORIES = [
+  'trivia',
+  'karaoke',
+  'live-music',
+  'dj-night',
+  'happy-hour',
+  'brunch',
+  'bingo',
+  'open-mic',
+  'comedy',
+  'sports',
+  'theme-night',
+  'other',
+] as const;
+
+export type EventCategory = typeof EVENT_CATEGORIES[number];
+
+export const CATEGORY_LABELS: Record<EventCategory, string> = {
+  'trivia': 'Trivia',
+  'karaoke': 'Karaoke',
+  'live-music': 'Live Music',
+  'dj-night': 'DJ Night',
+  'happy-hour': 'Happy Hour',
+  'brunch': 'Brunch',
+  'bingo': 'Bingo',
+  'open-mic': 'Open Mic',
+  'comedy': 'Comedy',
+  'sports': 'Sports',
+  'theme-night': 'Theme Night',
+  'other': 'Other',
+};
 
 // Common timezone list for dropdown
 export const TIMEZONES = [
@@ -86,7 +126,7 @@ export function generateICSContent(event: EventData): string {
   const start = formatDateForICS(event.startTime);
   const end = event.endTime ? formatDateForICS(event.endTime) : formatDateForICS(new Date(event.startTime.getTime() + 60 * 60 * 1000));
   const dtstamp = formatDateForICS(new Date());
-  const uid = `${event.id || Date.now()}@calping.com`;
+  const uid = `${event.id || Date.now()}@caldrop.com`;
   
   // Build VALARM entries for each reminder
   // Default to 1 hour and 1 day before if no reminders specified
@@ -122,10 +162,10 @@ END:VALARM`;
 
   return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//CalPing//Event//EN
+PRODID:-//CalDrop//Event//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
-X-WR-CALNAME:CalPing Event
+X-WR-CALNAME:CalDrop Event
 BEGIN:VEVENT
 DTSTAMP:${dtstamp}
 UID:${uid}

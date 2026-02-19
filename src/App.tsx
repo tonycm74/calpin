@@ -10,6 +10,9 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import EventPage from "./pages/EventPage";
+import Attendees from "./pages/Attendees";
+import VenueSettings from "./pages/VenueSettings";
+import PublicSchedule from "./pages/PublicSchedule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,16 +47,33 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route 
-                  path="/dashboard" 
+                <Route
+                  path="/dashboard"
                   element={
                     <ProtectedRoute>
                       <Dashboard />
                     </ProtectedRoute>
-                  } 
+                  }
+                />
+                <Route
+                  path="/dashboard/attendees"
+                  element={
+                    <ProtectedRoute>
+                      <Attendees />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/settings"
+                  element={
+                    <ProtectedRoute>
+                      <VenueSettings />
+                    </ProtectedRoute>
+                  }
                 />
                 <Route path="/e/:slug" element={<EventPage />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                {/* Public venue schedule — must be LAST before catch-all */}
+                <Route path="/:username" element={<PublicSchedule />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AnalyticsProvider>

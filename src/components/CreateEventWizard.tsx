@@ -2,13 +2,14 @@ import { useState, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
-import { 
-  Calendar as CalendarIcon, 
-  FileText, 
-  Link as LinkIcon, 
-  AlignLeft, 
-  AlignCenter, 
+import { format, getDay, getDate } from "date-fns";
+import {
+  Calendar as CalendarIcon,
+  CalendarPlus,
+  FileText,
+  Link as LinkIcon,
+  AlignLeft,
+  AlignCenter,
   AlignRight,
   Image as ImageIcon,
   Palette,
@@ -19,7 +20,12 @@ import {
   Wand2,
   Loader2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  UserPlus,
+  Users,
+  LayoutGrid,
+  Repeat,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,8 +37,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload";
 import { EventCard } from "@/components/EventCard";
 import { TimePicker } from "@/components/TimePicker";
-import { EventData, UISchema, defaultUISchema, generateSlug, TIMEZONES, getDefaultTimezone } from "@/lib/calendar";
-import { useCreateEventPage, useUpdateEventPage } from "@/hooks/useEventPages";
+import { EventData, UISchema, defaultUISchema, generateSlug, TIMEZONES, getDefaultTimezone, PageType, EVENT_CATEGORIES, CATEGORY_LABELS, EventCategory } from "@/lib/calendar";
+import { RecurrenceRule, DAY_LABELS, describeRecurrence } from "@/lib/recurrence";
+import { useCreateEventPage, useUpdateEventPage, useCreateRecurringEvent } from "@/hooks/useEventPages";
 import { useEventImport, ImportedEventInfo } from "@/hooks/useEventImport";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -185,19 +192,37 @@ function WizardCard({
   );
 }
 
+function ordinalSuffix(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 export function CreateEventWizard({ onEventCreated, existingEvent, mode = 'create', onCancel }: CreateEventWizardProps) {
   const [imageUrl, setImageUrl] = useState<string | undefined>(existingEvent?.imageUrl);
   const [uiSchema, setUISchema] = useState<UISchema>(existingEvent?.uiSchema || defaultUISchema);
+  const [pageType, setPageType] = useState<PageType>(existingEvent?.pageType || 'calendar');
+  const [capacity, setCapacity] = useState<number | undefined>(existingEvent?.capacity);
+  const [category, setCategory] = useState<string>(existingEvent?.category || 'other');
   const [showImport, setShowImport] = useState(mode === 'create' && !existingEvent);
-  
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>({
+    frequency: 'weekly',
+    interval: 1,
+    daysOfWeek: [],
+    endType: 'after',
+    endAfterCount: 4,
+  });
+
   // Import state
   const [importUrl, setImportUrl] = useState("");
   const [importedData, setImportedData] = useState<ImportedEventInfo | null>(null);
   const [availableImages, setAvailableImages] = useState<string[]>([]);
   const { extractEventInfo, isLoading: isImporting, error: importError, clearError } = useEventImport();
-  
+
   const createEvent = useCreateEventPage();
   const updateEvent = useUpdateEventPage();
+  const createRecurring = useCreateRecurringEvent();
   const { user } = useAuth();
 
   const {
@@ -317,8 +342,11 @@ export function CreateEventWizard({ onEventCreated, existingEvent, mode = 'creat
       reminderMinutes: existingEvent?.reminderMinutes || [],
       uiSchema: uiSchema,
       timezone: timezone,
+      pageType: pageType,
+      capacity: capacity,
+      category: category,
     };
-  }, [watchedValues, imageUrl, uiSchema, existingEvent]);
+  }, [watchedValues, imageUrl, uiSchema, existingEvent, pageType, capacity, category]);
 
   const onSubmit = async (data: EventFormData) => {
     const [startHours, startMinutes] = data.startTime.split(':').map(Number);
@@ -345,11 +373,16 @@ export function CreateEventWizard({ onEventCreated, existingEvent, mode = 'creat
       reminderMinutes: existingEvent?.reminderMinutes || [],
       uiSchema: uiSchema,
       timezone: data.timezone,
+      pageType: pageType,
+      capacity: pageType === 'waitlist' ? capacity : undefined,
+      category: category,
     };
 
     if (user) {
       if (mode === 'edit' && existingEvent?.id) {
         await updateEvent.mutateAsync({ ...event, id: existingEvent.id });
+      } else if (isRecurring) {
+        await createRecurring.mutateAsync({ ...event, recurrenceRule });
       } else {
         await createEvent.mutateAsync(event);
       }
@@ -377,8 +410,29 @@ export function CreateEventWizard({ onEventCreated, existingEvent, mode = 'creat
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">Import from link</h3>
-                <p className="text-sm text-muted-foreground">Auto-fill from Ticketmaster, Eventbrite, etc.</p>
+                <p className="text-sm text-muted-foreground">Paste any event URL to auto-fill details</p>
               </div>
+            </div>
+
+            {/* Platform suggestions */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { name: 'Ticketmaster', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+                { name: 'Eventbrite', color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+                { name: 'Tixr', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+                { name: 'Zoom', color: 'bg-sky-500/10 text-sky-400 border-sky-500/20' },
+                { name: 'Meetup', color: 'bg-red-500/10 text-red-400 border-red-500/20' },
+              ].map((platform) => (
+                <span
+                  key={platform.name}
+                  className={cn(
+                    "px-2.5 py-1 text-xs font-medium rounded-full border",
+                    platform.color
+                  )}
+                >
+                  {platform.name}
+                </span>
+              ))}
             </div>
 
             <div className="flex gap-2">
@@ -429,6 +483,73 @@ export function CreateEventWizard({ onEventCreated, existingEvent, mode = 'creat
             </button>
           </div>
         )}
+
+        {/* Page Type Card */}
+        <WizardCard icon={LayoutGrid} title="Page Type">
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              {([
+                { value: 'calendar' as PageType, icon: CalendarPlus, label: 'Calendar', desc: 'Add to calendar CTA' },
+                { value: 'rsvp' as PageType, icon: UserPlus, label: 'RSVP', desc: 'Collect name & email' },
+                { value: 'waitlist' as PageType, icon: Users, label: 'Waitlist', desc: 'RSVP with capacity' },
+              ]).map(({ value, icon: Icon, label, desc }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setPageType(value)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center",
+                    pageType === value
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50 bg-background"
+                  )}
+                >
+                  <Icon className={cn("w-6 h-6", pageType === value ? "text-primary" : "text-muted-foreground")} />
+                  <span className={cn("text-sm font-medium", pageType === value ? "text-foreground" : "text-muted-foreground")}>{label}</span>
+                  <span className="text-[11px] text-muted-foreground leading-tight">{desc}</span>
+                </button>
+              ))}
+            </div>
+            {pageType === 'waitlist' && (
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Capacity *</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  min={1}
+                  placeholder="e.g., 100"
+                  value={capacity || ''}
+                  onChange={(e) => setCapacity(e.target.value ? Number(e.target.value) : undefined)}
+                  className="bg-background border-border focus:border-primary max-w-[200px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Once full, new signups are added to the waitlist
+                </p>
+              </div>
+            )}
+          </div>
+        </WizardCard>
+
+        {/* Category Card */}
+        <WizardCard icon={Tag} title="Event Category">
+          <div className="flex flex-wrap gap-2">
+            {EVENT_CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategory(cat)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
+                  category === cat
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                )}
+              >
+                {CATEGORY_LABELS[cat]}
+              </button>
+            ))}
+          </div>
+        </WizardCard>
 
         {/* Basics Card */}
         <WizardCard icon={FileText} title="Event Details">
@@ -516,7 +637,16 @@ export function CreateEventWizard({ onEventCreated, existingEvent, mode = 'creat
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            if (date && isRecurring) {
+                              setRecurrenceRule((r) => ({
+                                ...r,
+                                daysOfWeek: [getDay(date)],
+                                dayOfMonth: getDate(date),
+                              }));
+                            }
+                          }}
                           initialFocus
                           className="p-3 pointer-events-auto"
                         />
@@ -591,6 +721,227 @@ export function CreateEventWizard({ onEventCreated, existingEvent, mode = 'creat
             </div>
           </div>
         </WizardCard>
+
+        {/* Repeat Card */}
+        {mode === 'create' && (
+          <WizardCard icon={Repeat} title="Repeat" collapsible defaultOpen={false}>
+            <div className="space-y-4">
+              {/* Toggle */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isRecurring}
+                  onClick={() => {
+                    const next = !isRecurring;
+                    setIsRecurring(next);
+                    if (next && watchedValues.startDate) {
+                      const dow = getDay(watchedValues.startDate);
+                      const dom = getDate(watchedValues.startDate);
+                      setRecurrenceRule((r) => ({
+                        ...r,
+                        daysOfWeek: [dow],
+                        dayOfMonth: dom,
+                      }));
+                    }
+                  }}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                    isRecurring ? "bg-primary" : "bg-secondary"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "inline-block h-4 w-4 rounded-full bg-white transition-transform",
+                      isRecurring ? "translate-x-6" : "translate-x-1"
+                    )}
+                  />
+                </button>
+                <span className="text-sm font-medium text-foreground">Repeat this event</span>
+              </label>
+
+              {isRecurring && (
+                <div className="space-y-4 pt-1">
+                  {/* Frequency */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Frequency</Label>
+                      <Select
+                        value={recurrenceRule.frequency}
+                        onValueChange={(v) => setRecurrenceRule((r) => ({ ...r, frequency: v as RecurrenceRule['frequency'] }))}
+                      >
+                        <SelectTrigger className="bg-background border-border">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Every</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={30}
+                          value={recurrenceRule.interval}
+                          onChange={(e) => setRecurrenceRule((r) => ({ ...r, interval: Math.max(1, Number(e.target.value) || 1) }))}
+                          className="bg-background border-border w-20"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {recurrenceRule.frequency === 'daily' ? 'day(s)' : recurrenceRule.frequency === 'weekly' ? 'week(s)' : 'month(s)'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Days of week (weekly) — auto-set from start date, user can add more */}
+                  {recurrenceRule.frequency === 'weekly' && (
+                    <div className="space-y-2">
+                      <Label>On days</Label>
+                      <div className="flex gap-1.5">
+                        {DAY_LABELS.map((label, i) => {
+                          const isStartDay = watchedValues.startDate && getDay(watchedValues.startDate) === i;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                // Don't allow deselecting the start date's day
+                                if (isStartDay) return;
+                                setRecurrenceRule((r) => {
+                                  const days = r.daysOfWeek || [];
+                                  return {
+                                    ...r,
+                                    daysOfWeek: days.includes(i) ? days.filter((d) => d !== i) : [...days, i],
+                                  };
+                                });
+                              }}
+                              className={cn(
+                                "w-10 h-10 rounded-lg text-xs font-medium transition-colors",
+                                recurrenceRule.daysOfWeek?.includes(i)
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                              )}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {watchedValues.startDate && (
+                        <p className="text-xs text-muted-foreground">
+                          {DAY_LABELS[getDay(watchedValues.startDate)]} is auto-selected from your start date
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Day of month (monthly) — auto-set from start date */}
+                  {recurrenceRule.frequency === 'monthly' && (
+                    <div className="space-y-2">
+                      <Label>On day</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={recurrenceRule.dayOfMonth || ''}
+                        onChange={(e) => setRecurrenceRule((r) => ({ ...r, dayOfMonth: Number(e.target.value) || undefined }))}
+                        className="bg-background border-border w-24"
+                      />
+                      {watchedValues.startDate && (
+                        <p className="text-xs text-muted-foreground">
+                          Auto-set to the {ordinalSuffix(getDate(watchedValues.startDate))} from your start date
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* End condition */}
+                  <div className="space-y-3">
+                    <Label>Ends</Label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="endType"
+                          checked={recurrenceRule.endType === 'after'}
+                          onChange={() => setRecurrenceRule((r) => ({ ...r, endType: 'after' }))}
+                          className="accent-primary"
+                        />
+                        <span className="text-sm">After</span>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={52}
+                          value={recurrenceRule.endAfterCount || ''}
+                          onChange={(e) => setRecurrenceRule((r) => ({ ...r, endAfterCount: Number(e.target.value) || undefined }))}
+                          disabled={recurrenceRule.endType !== 'after'}
+                          className="bg-background border-border w-20 h-8"
+                        />
+                        <span className="text-sm text-muted-foreground">occurrences</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="endType"
+                          checked={recurrenceRule.endType === 'until'}
+                          onChange={() => setRecurrenceRule((r) => ({ ...r, endType: 'until' }))}
+                          className="accent-primary"
+                        />
+                        <span className="text-sm">Until</span>
+                        <Controller
+                          control={control}
+                          name="endDate"
+                          render={() => (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={recurrenceRule.endType !== 'until'}
+                                  className={cn(
+                                    "h-8 text-left font-normal bg-background border-border",
+                                    !recurrenceRule.endUntilDate && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-3 w-3" />
+                                  {recurrenceRule.endUntilDate
+                                    ? format(new Date(recurrenceRule.endUntilDate), "MMM d, yyyy")
+                                    : "Pick date"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0 bg-popover border-border" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={recurrenceRule.endUntilDate ? new Date(recurrenceRule.endUntilDate) : undefined}
+                                  onSelect={(date) => {
+                                    if (date) setRecurrenceRule((r) => ({ ...r, endUntilDate: date.toISOString() }));
+                                  }}
+                                  initialFocus
+                                  className="p-3 pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Preview text */}
+                  <p className="text-xs text-primary bg-primary/5 rounded-lg px-3 py-2">
+                    {describeRecurrence(recurrenceRule)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </WizardCard>
+        )}
 
         {/* Image & Link Card */}
         <WizardCard icon={ImageIcon} title="Image & Link">
@@ -735,11 +1086,11 @@ export function CreateEventWizard({ onEventCreated, existingEvent, mode = 'creat
             variant="glow"
             size="lg"
             className="flex-1"
-            disabled={createEvent.isPending || updateEvent.isPending}
+            disabled={createEvent.isPending || updateEvent.isPending || createRecurring.isPending}
           >
-            {createEvent.isPending || updateEvent.isPending 
-              ? (mode === 'edit' ? "Saving..." : "Creating...") 
-              : (mode === 'edit' ? "Save Changes" : "Create Event Page")}
+            {createEvent.isPending || updateEvent.isPending || createRecurring.isPending
+              ? (mode === 'edit' ? "Saving..." : "Creating...")
+              : (mode === 'edit' ? "Save Changes" : isRecurring ? "Create Recurring Event" : "Create Event Page")}
             <Check className="w-4 h-4 ml-2" />
           </Button>
         </div>
@@ -752,7 +1103,7 @@ export function CreateEventWizard({ onEventCreated, existingEvent, mode = 'creat
             <p className="text-sm font-medium text-muted-foreground text-center">Live Preview</p>
           </div>
           {previewEvent ? (
-            <EventCard event={previewEvent} />
+            <EventCard event={previewEvent} isPreview />
           ) : (
             <div className="bg-card rounded-2xl border border-border border-dashed p-12 text-center">
               <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
