@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -19,6 +19,8 @@ import {
   Mic2,
   Music,
   UtensilsCrossed,
+  Search,
+  Compass,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateEventWizard } from "@/components/CreateEventWizard";
@@ -30,8 +32,18 @@ import { useAuth } from "@/hooks/useAuth";
 const Index = () => {
   const [createdEvent, setCreatedEvent] = useState<EventData | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [discoverQuery, setDiscoverQuery] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const handleDiscover = (e: FormEvent) => {
+    e.preventDefault();
+    if (discoverQuery.trim()) {
+      navigate(`/discover?q=${encodeURIComponent(discoverQuery.trim())}`);
+    } else {
+      navigate('/discover');
+    }
+  };
 
   const handleEventCreated = (event?: EventData) => {
     if (event) {
@@ -200,6 +212,12 @@ const Index = () => {
               <span className="text-xl font-semibold text-foreground tracking-tight">CalDrop</span>
             </div>
             <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
+                <Link to="/discover">
+                  <Compass className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">Explore</span>
+                </Link>
+              </Button>
               {user ? (
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/dashboard">Dashboard</Link>
@@ -257,6 +275,29 @@ const Index = () => {
                 <a href="#how-it-works">See How It Works</a>
               </Button>
             </div>
+
+            {/* Discover search bar */}
+            <form onSubmit={handleDiscover} className="mt-10 max-w-md mx-auto animate-fade-up delay-400">
+              <p className="text-sm text-muted-foreground mb-3">Or find events near you</p>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={discoverQuery}
+                  onChange={(e) => setDiscoverQuery(e.target.value)}
+                  placeholder="Search a town or city..."
+                  className="w-full pl-11 pr-24 py-3 rounded-xl bg-background/80 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 backdrop-blur-sm"
+                />
+                <Button
+                  type="submit"
+                  variant="glow"
+                  size="sm"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2"
+                >
+                  Explore
+                </Button>
+              </div>
+            </form>
           </section>
 
           {/* ============================================ */}

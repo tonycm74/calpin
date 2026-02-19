@@ -13,6 +13,7 @@ import EventPage from "./pages/EventPage";
 import Attendees from "./pages/Attendees";
 import VenueSettings from "./pages/VenueSettings";
 import PublicSchedule from "./pages/PublicSchedule";
+import Discover from "./pages/Discover";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/discover" element={<Discover />} />
                 <Route path="/e/:slug" element={<EventPage />} />
                 {/* Public venue schedule — must be LAST before catch-all */}
                 <Route path="/:username" element={<PublicSchedule />} />

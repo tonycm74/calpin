@@ -112,6 +112,46 @@ export function useProfileByUsername(username: string | undefined) {
   });
 }
 
+export function useSearchVenues(query: string) {
+  return useQuery({
+    queryKey: ['search-venues', query],
+    queryFn: async () => {
+      if (!query || query.length < 2) return [];
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .not('username', 'is', null)
+        .ilike('venue_address', `%${query}%`);
+
+      if (error) throw error;
+      return data as Profile[];
+    },
+    enabled: query.length >= 2,
+  });
+}
+
+export function useEventsForVenues(userIds: string[]) {
+  return useQuery({
+    queryKey: ['events-for-venues', userIds],
+    queryFn: async () => {
+      if (userIds.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from('event_pages')
+        .select('*')
+        .in('user_id', userIds)
+        .eq('is_recurring_parent', false)
+        .gte('start_time', new Date().toISOString())
+        .order('start_time', { ascending: true });
+
+      if (error) throw error;
+      return data as EventPage[];
+    },
+    enabled: userIds.length > 0,
+  });
+}
+
 export function usePublicEvents(userId: string | undefined) {
   return useQuery({
     queryKey: ['public-events', userId],
