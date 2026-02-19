@@ -152,11 +152,11 @@ const PublicSchedule = () => {
       <div className="min-h-screen bg-background">
         {/* Photo Banner — mobile only */}
         {images.length > 0 && (
-          <div className="relative w-full aspect-[16/9] overflow-hidden bg-secondary group lg:hidden">
+          <div className="relative w-full aspect-[16/9] overflow-hidden bg-black group lg:hidden">
             <img
               src={images[photoIndex] || images[0]}
               alt={`${profile.venue_name || ''} photo ${photoIndex + 1}`}
-              className="w-full h-full object-cover transition-opacity duration-300"
+              className="w-full h-full object-contain transition-opacity duration-300"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             {images.length > 1 && (
@@ -354,12 +354,12 @@ const PublicSchedule = () => {
               <div className="sticky top-8 space-y-5">
                 {/* Photos Card */}
                 {images.length > 0 && (
-                  <div className="rounded-xl overflow-hidden border border-border bg-card">
+                  <div className="rounded-xl overflow-hidden border border-border bg-black">
                     <div className="relative aspect-[4/3] overflow-hidden group">
                       <img
                         src={images[photoIndex] || images[0]}
                         alt={`${profile.venue_name || ''} photo ${photoIndex + 1}`}
-                        className="w-full h-full object-cover transition-opacity duration-300"
+                        className="w-full h-full object-contain transition-opacity duration-300"
                       />
                       {images.length > 1 && (
                         <>
