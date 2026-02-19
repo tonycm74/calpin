@@ -152,7 +152,7 @@ const PublicSchedule = () => {
       <div className="min-h-screen bg-background">
         {/* Photo Banner — mobile only */}
         {images.length > 0 && (
-          <div className="relative w-full h-48 sm:h-64 overflow-hidden bg-secondary group lg:hidden">
+          <div className="relative w-full aspect-[16/9] overflow-hidden bg-secondary group lg:hidden">
             <img
               src={images[photoIndex] || images[0]}
               alt={`${profile.venue_name || ''} photo ${photoIndex + 1}`}
@@ -281,9 +281,7 @@ const PublicSchedule = () => {
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                     src={
-                      profile.google_place_id
-                        ? `https://maps.google.com/maps?q=place_id:${profile.google_place_id}&t=&z=15&ie=UTF8&iwloc=&output=embed`
-                        : `https://maps.google.com/maps?q=${encodeURIComponent(profile.venue_address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+                        `https://maps.google.com/maps?q=${encodeURIComponent((profile.venue_name ? profile.venue_name + ', ' : '') + profile.venue_address)}&z=16&ie=UTF8&iwloc=&output=embed`
                     }
                   />
                 </div>
